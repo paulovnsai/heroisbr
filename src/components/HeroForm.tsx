@@ -267,6 +267,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
           <AudioRecorder
             onTranscriptionComplete={handleTranscriptionComplete}
             supabaseUrl={import.meta.env.VITE_SUPABASE_URL}
+            openaiKey={import.meta.env.VITE_OPENAI_API_KEY}
           />
 
           <div>

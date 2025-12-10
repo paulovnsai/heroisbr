@@ -4,9 +4,10 @@ import { Mic, Square, Loader2 } from 'lucide-react';
 interface AudioRecorderProps {
   onTranscriptionComplete: (data: any) => void;
   supabaseUrl: string;
+  openaiKey: string;
 }
 
-export function AudioRecorder({ onTranscriptionComplete, supabaseUrl }: AudioRecorderProps) {
+export function AudioRecorder({ onTranscriptionComplete, supabaseUrl, openaiKey }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -53,40 +54,126 @@ export function AudioRecorder({ onTranscriptionComplete, supabaseUrl }: AudioRec
 
     try {
       const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      console.log('Tamanho do áudio:', audioBlob.size, 'bytes');
+
+      if (audioBlob.size < 1000) {
+        throw new Error('Áudio muito curto. Grave por pelo menos 2 segundos.');
+      }
 
       const reader = new FileReader();
       reader.readAsDataURL(audioBlob);
 
       reader.onloadend = async () => {
-        const base64Audio = (reader.result as string).split(',')[1];
+        try {
+          console.log('Convertendo áudio para enviar à OpenAI...');
 
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/transcribe-hero-audio`,
-          {
+          const formData = new FormData();
+          formData.append('file', audioBlob, 'audio.webm');
+          formData.append('model', 'whisper-1');
+          formData.append('language', 'pt');
+
+          console.log('Enviando para Whisper API...');
+          const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
+              'Authorization': `Bearer ${openaiKey}`,
+            },
+            body: formData,
+          });
+
+          if (!transcriptionResponse.ok) {
+            const errorText = await transcriptionResponse.text();
+            console.error('Erro na transcrição:', errorText);
+            throw new Error(`Erro na transcrição: ${transcriptionResponse.status}`);
+          }
+
+          const transcriptionData = await transcriptionResponse.json();
+          const transcribedText = transcriptionData.text;
+          console.log('Transcrição:', transcribedText);
+
+          console.log('Extraindo dados estruturados com GPT...');
+          const extractionPrompt = `Você é um assistente que extrai informações de heróis brasileiros a partir de uma transcrição.
+
+Transcrição: "${transcribedText}"
+
+Extraia as seguintes informações se disponíveis:
+- name: Nome completo do herói
+- ideia: Descrição do ato heroico
+- observacao: Observações adicionais
+- local: Cidade e estado (formato: Cidade - UF)
+- ano: Ano do acontecimento
+- status: Um de: "Lembrado nacionalmente", "Pouco lembrado nacionalmente", "Esquecido"
+- artstyle: Estilo artístico (padrão: "Historical semi-realistic digital painting")
+- storylength: Duração da história (padrão: "1 minuto")
+
+Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for mencionado, use string vazia. Exemplo:
+{
+  "name": "Maria Silva",
+  "ideia": "Salvou crianças de incêndio",
+  "observacao": "",
+  "local": "São Paulo - SP",
+  "ano": "2020",
+  "status": "Pouco lembrado nacionalmente",
+  "artstyle": "Historical semi-realistic digital painting",
+  "storylength": "1 minuto"
+}`;
+
+          const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ audioData: base64Audio }),
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: 'Você é um assistente que extrai dados estruturados de texto. Retorne apenas JSON válido.' },
+                { role: 'user', content: extractionPrompt }
+              ],
+              temperature: 0.3,
+            }),
+          });
+
+          if (!gptResponse.ok) {
+            const errorText = await gptResponse.text();
+            console.error('Erro ao extrair dados:', errorText);
+            throw new Error(`Erro ao extrair dados: ${gptResponse.status}`);
           }
-        );
 
-        if (!response.ok) {
-          throw new Error('Erro ao processar áudio');
+          const gptData = await gptResponse.json();
+          const extractedDataText = gptData.choices[0].message.content;
+
+          let extractedData;
+          try {
+            extractedData = JSON.parse(extractedDataText);
+          } catch (e) {
+            const jsonMatch = extractedDataText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              extractedData = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error('Não foi possível extrair JSON da resposta');
+            }
+          }
+
+          console.log('Dados extraídos:', extractedData);
+          onTranscriptionComplete(extractedData);
+          alert(`✅ Áudio processado!\n\nTranscrição: "${transcribedText}"\n\nCampos preenchidos automaticamente.`)
+        } catch (error) {
+          console.error('Erro ao processar áudio:', error);
+          alert(`Erro: ${error instanceof Error ? error.message : 'Erro ao processar o áudio'}`);
+        } finally {
+          setIsProcessing(false);
         }
+      };
 
-        const result = await response.json();
-
-        if (result.success) {
-          onTranscriptionComplete(result.data);
-        } else {
-          throw new Error(result.error || 'Erro desconhecido');
-        }
+      reader.onerror = () => {
+        console.error('Erro ao ler arquivo de áudio');
+        alert('Erro ao ler o arquivo de áudio');
+        setIsProcessing(false);
       };
     } catch (error) {
       console.error('Erro ao processar áudio:', error);
-      alert('Erro ao processar o áudio. Tente novamente.');
-    } finally {
+      alert(`Erro: ${error instanceof Error ? error.message : 'Erro ao processar o áudio'}`);
       setIsProcessing(false);
     }
   };
