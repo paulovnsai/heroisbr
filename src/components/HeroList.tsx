@@ -21,6 +21,26 @@ export function HeroList() {
 
   useEffect(() => {
     fetchHeroes();
+
+    const channel = supabase
+      .channel('heroes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'heroes'
+        },
+        (payload) => {
+          console.log('Mudança detectada:', payload);
+          fetchHeroes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

@@ -56,6 +56,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
   const processWebhook = async (heroId: string, heroName: string) => {
     try {
       const webhookPayload = {
+        heroId: heroId,
         name: formData.name,
         ideia: formData.ideia,
         observacao: formData.observacao,
@@ -66,7 +67,8 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         storylength: formData.storylength,
       };
 
-      console.log('Enviando para webhook...');
+      console.log('Enviando para webhook com heroId:', heroId);
+      console.log('Payload:', webhookPayload);
 
       const webhookResponse = await fetch(WEBHOOK_URL, {
         method: 'POST',
@@ -97,7 +99,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
         console.log('URL do arquivo recebida:', returnedFileUrl);
 
-        await supabase
+        const { error: updateError } = await supabase
           .from('heroes')
           .update({
             file_url: returnedFileUrl,
@@ -105,16 +107,16 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
           })
           .eq('id', heroId);
 
-        if (onProcessingComplete) {
-          onProcessingComplete(returnedFileUrl, heroName);
+        if (updateError) {
+          console.error('Erro ao atualizar herói:', updateError);
+        } else {
+          console.log('Herói atualizado com sucesso!');
+          if (onProcessingComplete) {
+            onProcessingComplete(returnedFileUrl, heroName);
+          }
         }
       } else {
-        console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
-
-        await supabase
-          .from('heroes')
-          .update({ processing_status: 'completed' })
-          .eq('id', heroId);
+        console.warn('Webhook não retornou URL do arquivo');
       }
     } catch (err: any) {
       console.error('Erro ao processar webhook:', err);
