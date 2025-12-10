@@ -25,7 +25,25 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const hasProcessedRef = useRef(false);
+
+  useEffect(() => {
+    if (status !== 'processing') return;
+
+    const timer = setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [status]);
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (hasProcessedRef.current) {
@@ -188,7 +206,12 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
 
           <div className="space-y-2">
             <h2 className="text-3xl font-bold text-gray-800">
-              {status === 'processing' && 'Processando...'}
+              {status === 'processing' && (
+                <span className="flex items-center gap-3 justify-center">
+                  Processando
+                  <span className="text-blue-600 font-mono">{formatTime(elapsedTime)}</span>
+                </span>
+              )}
               {status === 'success' && 'Concluído!'}
               {status === 'error' && 'Erro'}
             </h2>
