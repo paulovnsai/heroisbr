@@ -149,7 +149,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
           .eq('id', heroId);
 
         setFileUrl(returnedFileUrl);
-        setSuccess(true);
       } else {
         console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
 
@@ -157,11 +156,9 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
           .from('heroes')
           .update({ processing_status: 'completed' })
           .eq('id', heroId);
-
-        setSuccess(true);
       }
 
-      onSuccess();
+      setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
       console.error('Erro ao processar:', err);
@@ -177,7 +174,10 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
           <div className="bg-green-600 text-white px-6 py-4 flex justify-between items-center rounded-t-lg">
             <h2 className="text-2xl font-bold">Processamento Concluído!</h2>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onSuccess();
+                onClose();
+              }}
               className="text-white hover:text-gray-200 transition-colors"
             >
               <X size={24} />
@@ -223,7 +223,10 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
             )}
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                onSuccess();
+                onClose();
+              }}
               className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
             >
               Fechar
