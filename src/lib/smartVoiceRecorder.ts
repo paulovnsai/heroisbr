@@ -8,13 +8,20 @@ interface HeroFormData {
   storylength?: string;
 }
 
+interface ProcessResult {
+  fields: HeroFormData;
+  n8nLink?: string;
+}
+
+const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00-b537cfcbdcc7';
+
 export class SmartVoiceRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private stream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
-  private onFieldsUpdate?: (fields: HeroFormData) => void;
+  private onFieldsUpdate?: (result: ProcessResult) => void;
 
-  async startRecording(onFieldsUpdate?: (fields: HeroFormData) => void): Promise<void> {
+  async startRecording(onFieldsUpdate?: (result: ProcessResult) => void): Promise<void> {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Seu navegador não suporta gravação de áudio ou a página precisa estar em HTTPS');
     }
@@ -124,8 +131,45 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
       if (jsonMatch) {
         const fields = JSON.parse(jsonMatch[0]);
         console.log('Campos extraídos:', fields);
+
         if (Object.keys(fields).length > 0 && this.onFieldsUpdate) {
-          this.onFieldsUpdate(fields);
+          console.log('Chamando webhook do n8n...');
+
+          try {
+            const webhookPayload = {
+              name: fields.name || '',
+              ideia: fields.ideia || '',
+              observacao: fields.observacao || '',
+              local: fields.local || '',
+              ano: fields.ano || '',
+              status: 'Pouco lembrado nacionalmente',
+              artstyle: fields.artstyle || 'Historical semi-realistic digital painting',
+              storylength: fields.storylength || '20',
+            };
+
+            const webhookResponse = await fetch(WEBHOOK_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(webhookPayload),
+            });
+
+            let n8nLink: string | undefined;
+
+            if (webhookResponse.ok) {
+              const webhookData = await webhookResponse.json();
+              n8nLink = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+              console.log('Link do n8n:', n8nLink);
+            } else {
+              console.warn('Webhook retornou erro:', webhookResponse.statusText);
+            }
+
+            this.onFieldsUpdate({ fields, n8nLink });
+          } catch (webhookError) {
+            console.error('Erro ao chamar webhook:', webhookError);
+            this.onFieldsUpdate({ fields });
+          }
         }
       }
     } catch (error) {

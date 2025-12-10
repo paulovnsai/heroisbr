@@ -174,15 +174,13 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
 
           <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
             <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-green-800 mb-1">Preencher por Voz</h3>
-                  <p className="text-sm text-green-700">
-                    Fale os campos e conteúdos. Ex: "nome João Silva, descrição salvou crianças, local São Paulo, ano 2020"
-                  </p>
-                </div>
-                <SmartVoiceButton onFieldsExtracted={handleVoiceFieldsExtracted} />
+              <div>
+                <h3 className="font-semibold text-green-800 mb-1">Preencher por Voz</h3>
+                <p className="text-sm text-green-700 mb-3">
+                  Fale os campos e conteúdos. Ex: "nome João Silva, descrição salvou crianças, local São Paulo, ano 2020"
+                </p>
               </div>
+              <SmartVoiceButton onFieldsExtracted={handleVoiceFieldsExtracted} />
             </div>
           </div>
 
