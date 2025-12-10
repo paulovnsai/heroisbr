@@ -266,11 +266,6 @@ export function HeroList() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                <div className="absolute top-3 right-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(hero.status)}`}>
-                    {hero.status}
-                  </span>
-                </div>
                 <div className="absolute bottom-3 left-3 bg-black bg-opacity-60 text-white px-3 py-1 rounded-full text-sm font-medium">
                   {hero.ano}
                 </div>
