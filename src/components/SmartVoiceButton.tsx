@@ -21,8 +21,8 @@ export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
         await recorder.startRecording((result) => {
           if (Object.keys(result.fields).length > 0) {
             onFieldsExtracted(result.fields);
-            setIsProcessing(false);
           }
+          setIsProcessing(false);
         });
         setIsRecording(true);
       }

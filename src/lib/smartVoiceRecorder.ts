@@ -53,12 +53,24 @@ export class SmartVoiceRecorder {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
     if (!apiKey) {
-      throw new Error('Chave da API OpenAI não configurada');
+      if (this.onFieldsUpdate) {
+        this.onFieldsUpdate({ fields: {} });
+      }
+      alert('Chave da API OpenAI não configurada');
+      return;
     }
 
     try {
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
       console.log('Áudio capturado:', audioBlob.size, 'bytes');
+
+      if (audioBlob.size < 100) {
+        if (this.onFieldsUpdate) {
+          this.onFieldsUpdate({ fields: {} });
+        }
+        alert('Áudio muito curto. Tente gravar novamente.');
+        return;
+      }
 
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
@@ -131,13 +143,20 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
 
         delete fields.status;
 
-        if (Object.keys(fields).length > 0 && this.onFieldsUpdate) {
+        if (this.onFieldsUpdate) {
           this.onFieldsUpdate({ fields });
+        }
+      } else {
+        if (this.onFieldsUpdate) {
+          this.onFieldsUpdate({ fields: {} });
         }
       }
     } catch (error) {
       console.error('Erro ao processar áudio:', error);
-      throw error;
+      if (this.onFieldsUpdate) {
+        this.onFieldsUpdate({ fields: {} });
+      }
+      alert(error instanceof Error ? error.message : 'Erro ao processar áudio');
     }
   }
 
