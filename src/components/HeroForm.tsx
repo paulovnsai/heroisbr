@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, User, MapPin, Calendar, FileText, Palette, Copy, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
+import { AudioRecorder } from './AudioRecorder';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -30,6 +31,20 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
+
+  const handleTranscriptionComplete = (data: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...(data.name && { name: data.name }),
+      ...(data.ideia && { ideia: data.ideia }),
+      ...(data.observacao && { observacao: data.observacao }),
+      ...(data.local && { local: data.local }),
+      ...(data.ano && { ano: data.ano }),
+      ...(data.status && { status: data.status }),
+      ...(data.artstyle && { artstyle: data.artstyle }),
+      ...(data.storylength && { storylength: data.storylength }),
+    }));
+  };
 
   const getWebhookPayload = () => {
     return {
@@ -248,6 +263,11 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               {error}
             </div>
           )}
+
+          <AudioRecorder
+            onTranscriptionComplete={handleTranscriptionComplete}
+            supabaseUrl={import.meta.env.VITE_SUPABASE_URL}
+          />
 
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
