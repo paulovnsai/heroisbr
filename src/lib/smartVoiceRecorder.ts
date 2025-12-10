@@ -31,12 +31,23 @@ export class SmartVoiceRecorder {
 
     this.onFieldsUpdate = onFieldsUpdate;
 
+    console.log('Solicitando permissão do microfone...');
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        sampleRate: 24000
+      }
+    });
+    console.log('Permissão do microfone concedida!');
+
+    console.log('Conectando ao WebSocket...');
     this.ws = new WebSocket(
       `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`,
       ['realtime', `openai-insecure-api-key.${apiKey}`, 'openai-beta.realtime-v1']
     );
 
     this.ws.onopen = () => {
+      console.log('WebSocket conectado!');
       this.ws?.send(JSON.stringify({
         type: 'session.update',
         session: {
@@ -129,13 +140,7 @@ Exemplo de resposta:
       console.error('Erro no WebSocket:', error);
     };
 
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        sampleRate: 24000
-      }
-    });
-
+    console.log('Configurando processamento de áudio...');
     this.audioContext = new AudioContext({ sampleRate: 24000 });
     this.source = this.audioContext.createMediaStreamSource(this.stream);
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
