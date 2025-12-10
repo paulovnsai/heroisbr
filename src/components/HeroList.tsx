@@ -309,13 +309,6 @@ export function HeroList() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setViewingHero(hero)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    <Eye size={16} />
-                    Ver
-                  </button>
-                  <button
                     onClick={() => handleEdit(hero)}
                     className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                   >
