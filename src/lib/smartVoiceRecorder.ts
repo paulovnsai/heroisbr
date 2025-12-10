@@ -25,6 +25,10 @@ export class SmartVoiceRecorder {
       throw new Error('Chave da API OpenAI não configurada');
     }
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Seu navegador não suporta gravação de áudio ou a página precisa estar em HTTPS');
+    }
+
     this.onFieldsUpdate = onFieldsUpdate;
 
     this.ws = new WebSocket(
