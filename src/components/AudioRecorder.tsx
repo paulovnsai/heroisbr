@@ -97,8 +97,10 @@ export function AudioRecorder({ onTranscriptionComplete, supabaseUrl, openaiKey 
 Transcrição: "${transcribedText}"
 
 Extraia as seguintes informações:
-- name: Nome completo do herói
-- ideia: Descrição completa do ato heroico
+- name: Nome do vídeo/título que identifica este herói (deve ser o nome completo da pessoa mencionada)
+- ideia: Descrição completa do ato heroico e da história
+
+IMPORTANTE: O campo "name" deve conter o nome da pessoa que é o herói da história. Este será o título do vídeo.
 
 Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for mencionado, use string vazia. Exemplo:
 {
