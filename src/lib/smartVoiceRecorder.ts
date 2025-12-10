@@ -63,7 +63,12 @@ Exemplo de resposta:
           input_audio_transcription: {
             model: 'whisper-1'
           },
-          turn_detection: null,
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.3,
+            prefix_padding_ms: 200,
+            silence_duration_ms: 400
+          },
           temperature: 0.3
         }
       }));
@@ -72,6 +77,8 @@ Exemplo de resposta:
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
+        console.log('[WS Event]', data.type, data);
 
         if (data.type === 'response.text.delta') {
           this.processTextResponse(data.delta || '');
@@ -98,11 +105,14 @@ Exemplo de resposta:
         }
 
         if (data.type === 'conversation.item.input_audio_transcription.completed') {
+          console.log('[Transcription Completed]', data.transcript);
           this.conversationHistory += ' ' + data.transcript;
+          this.processTranscriptRealTime(this.conversationHistory);
           this.currentTranscript = '';
         }
 
         if (data.type === 'conversation.item.input_audio_transcription.delta') {
+          console.log('[Transcription Delta]', data.delta);
           this.currentTranscript += data.delta;
           this.processTranscriptRealTime(this.currentTranscript);
         }
@@ -168,6 +178,8 @@ Exemplo de resposta:
   private processTranscriptRealTime(transcript: string): void {
     if (!transcript || !this.onFieldsUpdate) return;
 
+    console.log('[Processing Transcript]', transcript);
+
     try {
       const fields: HeroFormData = {};
       const text = transcript.toLowerCase();
@@ -219,6 +231,8 @@ Exemplo de resposta:
           fields.observacao = obs;
         }
       }
+
+      console.log('[Extracted Fields]', fields);
 
       if (Object.keys(fields).length > 0) {
         this.onFieldsUpdate(fields);
