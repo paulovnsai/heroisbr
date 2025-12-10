@@ -105,6 +105,10 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
                               webhookData.fileurl || webhookData.file_Url || webhookData.downloadUrl ||
                               webhookData.download_url || webhookData.link;
 
+      const content = webhookData.content || webhookData.story || webhookData.text ||
+                     webhookData.generatedContent || webhookData.generated_content ||
+                     webhookData.output || webhookData.result || '';
+
       const updateData: any = {
         processing_status: 'completed'
       };
@@ -112,8 +116,13 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       if (returnedFileUrl) {
         console.log('URL do arquivo recebida:', returnedFileUrl);
         updateData.file_url = returnedFileUrl;
+      }
+
+      if (content) {
+        console.log('Conteúdo recebido:', content.substring(0, 100) + '...');
+        updateData.generated_content = content;
       } else {
-        console.log('Webhook respondeu com sucesso, mas sem URL do arquivo');
+        console.log('Webhook respondeu com sucesso, mas sem conteúdo');
       }
 
       const { error: updateError } = await supabase
@@ -125,8 +134,8 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         console.error('Erro ao atualizar herói:', updateError);
       } else {
         console.log('Herói atualizado com sucesso!');
-        if (onProcessingComplete && returnedFileUrl) {
-          onProcessingComplete(returnedFileUrl, heroName);
+        if (onProcessingComplete && (returnedFileUrl || content)) {
+          onProcessingComplete(returnedFileUrl || content, heroName);
         } else if (onProcessingComplete) {
           onProcessingComplete('', heroName);
         }

@@ -29,6 +29,7 @@ export interface Database {
           file_url: string | null
           processing_status: string | null
           hero_image_url: string | null
+          generated_content: string | null
           created_at: string
           updated_at: string
         }
@@ -51,6 +52,7 @@ export interface Database {
           file_url?: string | null
           processing_status?: string | null
           hero_image_url?: string | null
+          generated_content?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -73,6 +75,7 @@ export interface Database {
           file_url?: string | null
           processing_status?: string | null
           hero_image_url?: string | null
+          generated_content?: string | null
           created_at?: string
           updated_at?: string
         }
