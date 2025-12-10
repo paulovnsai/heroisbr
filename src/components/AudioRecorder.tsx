@@ -156,8 +156,8 @@ Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for m
           }
 
           console.log('Dados extraídos:', extractedData);
+          console.log('Preenchendo campos automaticamente...');
           onTranscriptionComplete(extractedData);
-          alert(`✅ Áudio processado!\n\nTranscrição: "${transcribedText}"\n\nCampos preenchidos automaticamente.`)
         } catch (error) {
           console.error('Erro ao processar áudio:', error);
           alert(`Erro: ${error instanceof Error ? error.message : 'Erro ao processar o áudio'}`);
