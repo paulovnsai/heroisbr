@@ -92,31 +92,44 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         return;
       }
 
-      const webhookData = await webhookResponse.json();
-      console.log('Resposta do webhook:', webhookData);
+      let webhookData;
+      try {
+        webhookData = await webhookResponse.json();
+        console.log('Resposta do webhook:', webhookData);
+      } catch (jsonError) {
+        console.log('Resposta não é JSON, mas webhook retornou sucesso');
+        webhookData = {};
+      }
 
-      if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
-        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+      const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url ||
+                              webhookData.fileurl || webhookData.file_Url || webhookData.downloadUrl ||
+                              webhookData.download_url || webhookData.link;
+
+      const updateData: any = {
+        processing_status: 'completed'
+      };
+
+      if (returnedFileUrl) {
         console.log('URL do arquivo recebida:', returnedFileUrl);
-
-        const { error: updateError } = await supabase
-          .from('heroes')
-          .update({
-            file_url: returnedFileUrl,
-            processing_status: 'completed'
-          })
-          .eq('id', heroId);
-
-        if (updateError) {
-          console.error('Erro ao atualizar herói:', updateError);
-        } else {
-          console.log('Herói atualizado com sucesso!');
-          if (onProcessingComplete) {
-            onProcessingComplete(returnedFileUrl, heroName);
-          }
-        }
+        updateData.file_url = returnedFileUrl;
       } else {
-        console.warn('Webhook não retornou URL do arquivo');
+        console.log('Webhook respondeu com sucesso, mas sem URL do arquivo');
+      }
+
+      const { error: updateError } = await supabase
+        .from('heroes')
+        .update(updateData)
+        .eq('id', heroId);
+
+      if (updateError) {
+        console.error('Erro ao atualizar herói:', updateError);
+      } else {
+        console.log('Herói atualizado com sucesso!');
+        if (onProcessingComplete && returnedFileUrl) {
+          onProcessingComplete(returnedFileUrl, heroName);
+        } else if (onProcessingComplete) {
+          onProcessingComplete('', heroName);
+        }
       }
     } catch (err: any) {
       console.error('Erro ao processar webhook:', err);

@@ -39,6 +39,7 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
         console.log('Enviando requisicao para o webhook...');
 
         const webhookPayload = {
+          heroId: heroId,
           name: heroData.name,
           ideia: heroData.ideia,
           observacao: heroData.observacao,
@@ -49,6 +50,7 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
           storylength: heroData.storylength,
         };
 
+        console.log('Enviando para webhook com heroId:', heroId);
         console.log('Payload:', webhookPayload);
 
         const webhookResponse = await fetch(WEBHOOK_URL, {
@@ -67,30 +69,42 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
           throw new Error(`Erro ao processar no webhook: ${webhookResponse.status}`);
         }
 
-        const webhookData = await webhookResponse.json();
-        console.log('Resposta do webhook:', webhookData);
+        let webhookData;
+        try {
+          webhookData = await webhookResponse.json();
+          console.log('Resposta do webhook:', webhookData);
+        } catch (jsonError) {
+          console.log('Resposta não é JSON, mas webhook retornou sucesso');
+          webhookData = {};
+        }
 
         if (isCancelled) return;
 
-        if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
-          const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url ||
+                                webhookData.fileurl || webhookData.file_Url || webhookData.downloadUrl ||
+                                webhookData.download_url || webhookData.link;
+
+        const updateData: any = {
+          processing_status: 'completed'
+        };
+
+        if (returnedFileUrl) {
           console.log('URL do arquivo recebida:', returnedFileUrl);
-
-          await supabase
-            .from('heroes')
-            .update({
-              file_url: returnedFileUrl,
-              processing_status: 'completed'
-            })
-            .eq('id', heroId);
-
-          if (!isCancelled) {
-            setFileUrl(returnedFileUrl);
-            setStatus('success');
-          }
+          updateData.file_url = returnedFileUrl;
         } else {
-          console.error('Webhook nao retornou URL do arquivo');
-          throw new Error('Webhook não retornou URL do arquivo');
+          console.log('Webhook respondeu com sucesso, mas sem URL do arquivo');
+        }
+
+        await supabase
+          .from('heroes')
+          .update(updateData)
+          .eq('id', heroId);
+
+        if (!isCancelled) {
+          if (returnedFileUrl) {
+            setFileUrl(returnedFileUrl);
+          }
+          setStatus('success');
         }
       } catch (err: any) {
         console.error('Erro ao processar:', err);
