@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, MapPin, Calendar, FileText, Palette, Copy, Download } from 'lucide-react';
+import { X, User, FileText, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { AudioRecorder } from './AudioRecorder';
@@ -19,13 +19,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
   const [formData, setFormData] = useState({
     name: hero?.name || '',
     ideia: hero?.ideia || '',
-    observacao: hero?.observacao || '',
-    local: hero?.local || '',
-    ano: hero?.ano || '',
-    status: hero?.status || 'Pouco lembrado nacionalmente',
-    artstyle: hero?.artstyle || 'Historical semi-realistic digital painting',
-    storylength: hero?.storylength || '1 minuto',
-    hero_image_url: hero?.hero_image_url || '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -37,12 +30,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       ...prev,
       ...(data.name && { name: data.name }),
       ...(data.ideia && { ideia: data.ideia }),
-      ...(data.observacao && { observacao: data.observacao }),
-      ...(data.local && { local: data.local }),
-      ...(data.ano && { ano: data.ano }),
-      ...(data.status && { status: data.status }),
-      ...(data.artstyle && { artstyle: data.artstyle }),
-      ...(data.storylength && { storylength: data.storylength }),
     }));
   };
 
@@ -50,12 +37,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     return {
       name: formData.name,
       ideia: formData.ideia,
-      observacao: formData.observacao,
-      local: formData.local,
-      ano: formData.ano,
-      status: formData.status,
-      artstyle: formData.artstyle,
-      storylength: formData.storylength,
     };
   };
 
@@ -74,12 +55,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         heroId: heroId,
         name: formData.name,
         ideia: formData.ideia,
-        observacao: formData.observacao,
-        local: formData.local,
-        ano: formData.ano,
-        status: formData.status,
-        artstyle: formData.artstyle,
-        storylength: formData.storylength,
       };
 
       console.log('Enviando para webhook com heroId:', heroId);
@@ -195,13 +170,13 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       const dataToInsert = {
         name: formData.name,
         ideia: formData.ideia,
-        observacao: formData.observacao,
-        local: formData.local,
-        ano: formData.ano,
-        status: formData.status,
-        artstyle: formData.artstyle,
-        storylength: formData.storylength,
-        hero_image_url: formData.hero_image_url,
+        observacao: '',
+        local: '',
+        ano: '',
+        status: 'Pouco lembrado nacionalmente',
+        artstyle: 'Historical semi-realistic digital painting',
+        storylength: '1 minuto',
+        hero_image_url: '',
         alias: formData.name,
         powers: [],
         level: 1,
@@ -247,7 +222,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-800">
-            {hero ? 'Editar Herói' : 'Registrar Novo Herói'}
+            Criar
           </h2>
           <button
             onClick={onClose}
@@ -273,7 +248,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
               <User size={18} />
-              Nome do Herói
+              Nome
             </label>
             <input
               type="text"
@@ -288,7 +263,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
               <FileText size={18} />
-              Descrição do Ato Heroico
+              Descrição
             </label>
             <textarea
               required
@@ -298,96 +273,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               placeholder="Descreva o que tornou essa pessoa um herói..."
             />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <FileText size={18} />
-              Observações (opcional)
-            </label>
-            <textarea
-              value={formData.observacao}
-              onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-              rows={2}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              placeholder="Informações adicionais..."
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <MapPin size={18} />
-                Local
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.local}
-                onChange={(e) => setFormData({ ...formData, local: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ex: Janaúba - MG"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Calendar size={18} />
-                Ano
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.ano}
-                onChange={(e) => setFormData({ ...formData, ano: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ex: 2017"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Status de Reconhecimento
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="Lembrado nacionalmente">Lembrado nacionalmente</option>
-              <option value="Pouco lembrado nacionalmente">Pouco lembrado nacionalmente</option>
-              <option value="Esquecido">Esquecido</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <Palette size={18} />
-              Estilo Artístico
-            </label>
-            <input
-              type="text"
-              value={formData.artstyle}
-              onChange={(e) => setFormData({ ...formData, artstyle: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Ex: Historical semi-realistic digital painting"
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <FileText size={18} />
-              Tamanho da História
-            </label>
-            <input
-              type="text"
-              value={formData.storylength}
-              onChange={(e) => setFormData({ ...formData, storylength: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Ex: 1 minuto"
-            />
-            <p className="text-xs text-gray-500 mt-1">Duração desejada para a história (ex: 1 minuto, 2 minutos, etc)</p>
           </div>
 
           <div className="flex gap-3 pt-4">
