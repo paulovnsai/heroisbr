@@ -11,8 +11,7 @@ function App() {
               <Shield className="text-white" size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Criação de Vídeos por IA, Registro de Heróis</h1>
-              <p className="text-gray-600 mt-1">Transforme histórias em vídeos com inteligência artificial</p>
+              <h1 className="text-3xl font-bold text-gray-900">Criação de Vídeos por IA</h1>
             </div>
           </div>
         </div>
