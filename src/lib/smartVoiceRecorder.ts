@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 interface HeroFormData {
   name?: string;
   ideia?: string;
@@ -68,7 +66,7 @@ Exemplo de resposta:
             type: 'server_vad',
             threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 500
+            silence_duration_ms: 200
           },
           temperature: 0.3
         }
@@ -78,6 +76,14 @@ Exemplo de resposta:
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
+        if (data.type === 'response.text.delta') {
+          this.processTextResponse(data.delta || '');
+        }
+
+        if (data.type === 'response.text.done') {
+          this.processTextResponse(data.text || '');
+        }
 
         if (data.type === 'response.done') {
           const output = data.response?.output;
@@ -97,6 +103,11 @@ Exemplo de resposta:
 
         if (data.type === 'conversation.item.input_audio_transcription.completed') {
           this.conversationHistory += ' ' + data.transcript;
+          this.processTranscript(data.transcript);
+        }
+
+        if (data.type === 'conversation.item.input_audio_transcription.delta') {
+          this.processTranscript(data.delta);
         }
       } catch (error) {
         console.error('Erro ao processar mensagem WebSocket:', error);
@@ -154,6 +165,46 @@ Exemplo de resposta:
       }
     } catch (error) {
       console.error('Erro ao processar resposta:', error, text);
+    }
+  }
+
+  private processTranscript(transcript: string): void {
+    if (!transcript || !this.onFieldsUpdate) return;
+
+    try {
+      const fields: HeroFormData = {};
+      const text = transcript.toLowerCase();
+
+      const nameMatch = text.match(/nome\s+(?:é\s+)?([a-záàâãéèêíïóôõöúçñ\s]+?)(?:\s+(?:descrição|ideia|local|ano|observação|$))/i);
+      if (nameMatch) {
+        fields.name = nameMatch[1].trim();
+      }
+
+      const ideaMatch = text.match(/(?:descrição|ideia)\s+(?:é\s+)?([^.]+?)(?:\s+(?:nome|local|ano|observação|$))/i);
+      if (ideaMatch) {
+        fields.ideia = ideaMatch[1].trim();
+      }
+
+      const localMatch = text.match(/local\s+(?:é\s+)?([a-záàâãéèêíïóôõöúçñ\s]+?)(?:\s+(?:nome|descrição|ideia|ano|observação|$))/i);
+      if (localMatch) {
+        fields.local = localMatch[1].trim();
+      }
+
+      const yearMatch = text.match(/ano\s+(?:é\s+)?(\d{4})/i);
+      if (yearMatch) {
+        fields.ano = yearMatch[1];
+      }
+
+      const obsMatch = text.match(/observação\s+(?:é\s+)?([^.]+?)(?:\s+(?:nome|descrição|ideia|local|ano|$))/i);
+      if (obsMatch) {
+        fields.observacao = obsMatch[1].trim();
+      }
+
+      if (Object.keys(fields).length > 0) {
+        this.onFieldsUpdate(fields);
+      }
+    } catch (error) {
+      console.error('Erro ao processar transcrição:', error);
     }
   }
 
