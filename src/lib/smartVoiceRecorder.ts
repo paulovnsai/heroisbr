@@ -10,10 +10,7 @@ interface HeroFormData {
 
 interface ProcessResult {
   fields: HeroFormData;
-  n8nLink?: string;
 }
-
-const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00-b537cfcbdcc7';
 
 export class SmartVoiceRecorder {
   private mediaRecorder: MediaRecorder | null = null;
