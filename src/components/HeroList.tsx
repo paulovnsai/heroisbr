@@ -186,7 +186,7 @@ export function HeroList() {
             >
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src="https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  src={hero.hero_image_url || "https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=800"}
                   alt={hero.name}
                   className="w-full h-full object-cover"
                 />
@@ -305,7 +305,7 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="relative h-64 overflow-hidden">
           <img
-            src="https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=1200"
+            src={hero.hero_image_url || "https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=1200"}
             alt={hero.name}
             className="w-full h-full object-cover"
           />

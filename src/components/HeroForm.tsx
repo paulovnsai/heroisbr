@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, User, MapPin, Calendar, FileText, Image as ImageIcon, Palette } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, User, MapPin, Calendar, FileText, Image as ImageIcon, Palette, Upload, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
@@ -23,10 +23,90 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
     status: hero?.status || 'Pouco lembrado nacionalmente',
     artstyle: hero?.artstyle || 'Historical semi-realistic digital painting',
     storylength: hero?.storylength || '20',
+    hero_image_url: hero?.hero_image_url || '',
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [imagePreview, setImagePreview] = useState(hero?.hero_image_url || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('hero-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('hero-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const url = await uploadImage(file);
+      setImagePreview(url);
+      setFormData({ ...formData, hero_image_url: url });
+    } catch (err: any) {
+      setError(err.message || 'Erro ao fazer upload da imagem');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          await handleImageUpload(file);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      await handleImageUpload(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +123,7 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         status: formData.status,
         artstyle: formData.artstyle,
         storylength: formData.storylength,
+        hero_image_url: formData.hero_image_url,
         alias: formData.name,
         powers: [],
         level: 1,
@@ -228,6 +309,82 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
               <option value="Pouco lembrado nacionalmente">Pouco lembrado nacionalmente</option>
               <option value="Esquecido">Esquecido</option>
             </select>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <ImageIcon size={18} />
+              Imagem do Herói
+            </label>
+            <div className="space-y-3">
+              <div
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onPaste={handlePaste}
+                className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-500 transition-colors"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                {imagePreview ? (
+                  <div className="space-y-3">
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagePreview('');
+                        setFormData({ ...formData, hero_image_url: '' });
+                      }}
+                      className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm"
+                    >
+                      Remover Imagem
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    {uploading ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                        <p className="text-sm text-gray-600">Fazendo upload...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload size={32} className="mx-auto text-gray-400 mb-3" />
+                        <p className="text-sm text-gray-600 mb-2">
+                          Arraste uma imagem aqui ou
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          Selecionar Arquivo
+                        </button>
+                        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
+                          <Copy size={14} />
+                          <span>Você também pode colar (Ctrl+V) uma imagem aqui</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-500">
+                Formatos suportados: PNG, JPG, GIF, WEBP
+              </p>
+            </div>
           </div>
 
           <div>
