@@ -3,6 +3,8 @@ import { X, User, MapPin, Calendar, FileText, Palette, Copy } from 'lucide-react
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { SmartVoiceButton } from './SmartVoiceButton';
+import { VoiceProcessingScreen } from './VoiceProcessingScreen';
+import { ProcessingStatus } from '../lib/smartVoiceRecorder';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -30,6 +32,20 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
+  const [voiceProcessingStatus, setVoiceProcessingStatus] = useState<ProcessingStatus | null>(null);
+  const [voiceErrorMessage, setVoiceErrorMessage] = useState<string>('');
+
+  const handleVoiceStatusChange = (status: ProcessingStatus, error?: string) => {
+    setVoiceProcessingStatus(status);
+    if (error) {
+      setVoiceErrorMessage(error);
+    }
+  };
+
+  const handleCloseVoiceProcessing = () => {
+    setVoiceProcessingStatus(null);
+    setVoiceErrorMessage('');
+  };
 
   const handleVoiceFieldsExtracted = (fields: Record<string, string>) => {
     const cleanedFields = Object.entries(fields).reduce((acc, [key, value]) => {
@@ -187,7 +203,10 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
                   Fale os campos e conteúdos. Ex: "nome João Silva, descrição salvou crianças, local São Paulo, ano 2020"
                 </p>
               </div>
-              <SmartVoiceButton onFieldsExtracted={handleVoiceFieldsExtracted} />
+              <SmartVoiceButton
+                onFieldsExtracted={handleVoiceFieldsExtracted}
+                onStatusChange={handleVoiceStatusChange}
+              />
             </div>
           </div>
 
@@ -392,6 +411,14 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {voiceProcessingStatus && (
+        <VoiceProcessingScreen
+          status={voiceProcessingStatus}
+          onClose={handleCloseVoiceProcessing}
+          errorMessage={voiceErrorMessage}
+        />
       )}
     </div>
   );

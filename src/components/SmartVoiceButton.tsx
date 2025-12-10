@@ -1,36 +1,47 @@
 import { useState } from 'react';
 import { Mic, Square } from 'lucide-react';
-import { SmartVoiceRecorder } from '../lib/smartVoiceRecorder';
+import { SmartVoiceRecorder, ProcessingStatus } from '../lib/smartVoiceRecorder';
 
 interface SmartVoiceButtonProps {
   onFieldsExtracted: (fields: Record<string, string>) => void;
+  onStatusChange?: (status: ProcessingStatus, error?: string) => void;
 }
 
-export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
+export function SmartVoiceButton({ onFieldsExtracted, onStatusChange }: SmartVoiceButtonProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [recorder] = useState(() => new SmartVoiceRecorder());
 
   const handleToggleRecording = async () => {
     try {
       if (isRecording) {
         setIsRecording(false);
-        setIsProcessing(true);
         recorder.stopRecording();
       } else {
-        await recorder.startRecording((result) => {
-          if (Object.keys(result.fields).length > 0) {
-            onFieldsExtracted(result.fields);
+        await recorder.startRecording(
+          (result) => {
+            if (Object.keys(result.fields).length > 0) {
+              onFieldsExtracted(result.fields);
+            }
+          },
+          (status, error) => {
+            if (status === 'recording') {
+              setIsRecording(true);
+            } else {
+              setIsRecording(false);
+            }
+
+            if (onStatusChange) {
+              onStatusChange(status, error);
+            }
           }
-          setIsProcessing(false);
-        });
-        setIsRecording(true);
+        );
       }
     } catch (error) {
       console.error('Erro ao processar voz:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao processar áudio');
       setIsRecording(false);
-      setIsProcessing(false);
+      if (onStatusChange) {
+        onStatusChange('error', error instanceof Error ? error.message : 'Erro ao processar áudio');
+      }
     }
   };
 
@@ -38,24 +49,16 @@ export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
     <button
       type="button"
       onClick={handleToggleRecording}
-      disabled={isProcessing}
       className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-        isProcessing
-          ? 'bg-blue-500 text-white cursor-wait shadow-lg'
-          : isRecording
+        isRecording
           ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg'
           : 'bg-green-500 text-white hover:bg-green-600 shadow-md'
       }`}
     >
-      {isProcessing ? (
-        <>
-          <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-          <span className="animate-pulse">Processando áudio...</span>
-        </>
-      ) : isRecording ? (
+      {isRecording ? (
         <>
           <Square size={20} fill="white" />
-          <span className="animate-pulse">Gravando... Clique para parar</span>
+          <span className="animate-pulse">Parar Gravação</span>
         </>
       ) : (
         <>

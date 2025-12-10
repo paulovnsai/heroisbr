@@ -12,18 +12,25 @@ interface ProcessResult {
   fields: HeroFormData;
 }
 
+export type ProcessingStatus = 'recording' | 'processing' | 'success' | 'error';
+
 export class SmartVoiceRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private stream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
   private onFieldsUpdate?: (result: ProcessResult) => void;
+  private onStatusChange?: (status: ProcessingStatus, error?: string) => void;
 
-  async startRecording(onFieldsUpdate?: (result: ProcessResult) => void): Promise<void> {
+  async startRecording(
+    onFieldsUpdate?: (result: ProcessResult) => void,
+    onStatusChange?: (status: ProcessingStatus, error?: string) => void
+  ): Promise<void> {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Seu navegador não suporta gravação de áudio ou a página precisa estar em HTTPS');
     }
 
     this.onFieldsUpdate = onFieldsUpdate;
+    this.onStatusChange = onStatusChange;
     this.audioChunks = [];
 
     console.log('Solicitando permissão do microfone...');
@@ -42,11 +49,18 @@ export class SmartVoiceRecorder {
 
     this.mediaRecorder.onstop = async () => {
       console.log('Gravação finalizada, processando...');
+      if (this.onStatusChange) {
+        this.onStatusChange('processing');
+      }
       await this.processAudio();
     };
 
     this.mediaRecorder.start();
     console.log('Gravação iniciada!');
+
+    if (this.onStatusChange) {
+      this.onStatusChange('recording');
+    }
   }
 
   private async processAudio(): Promise<void> {
@@ -56,7 +70,9 @@ export class SmartVoiceRecorder {
       if (this.onFieldsUpdate) {
         this.onFieldsUpdate({ fields: {} });
       }
-      alert('Chave da API OpenAI não configurada');
+      if (this.onStatusChange) {
+        this.onStatusChange('error', 'Chave da API OpenAI não configurada');
+      }
       return;
     }
 
@@ -68,7 +84,9 @@ export class SmartVoiceRecorder {
         if (this.onFieldsUpdate) {
           this.onFieldsUpdate({ fields: {} });
         }
-        alert('Áudio muito curto. Tente gravar novamente.');
+        if (this.onStatusChange) {
+          this.onStatusChange('error', 'Áudio muito curto. Tente gravar novamente.');
+        }
         return;
       }
 
@@ -146,9 +164,16 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
         if (this.onFieldsUpdate) {
           this.onFieldsUpdate({ fields });
         }
+
+        if (this.onStatusChange) {
+          this.onStatusChange('success');
+        }
       } else {
         if (this.onFieldsUpdate) {
           this.onFieldsUpdate({ fields: {} });
+        }
+        if (this.onStatusChange) {
+          this.onStatusChange('error', 'Não foi possível extrair campos do áudio');
         }
       }
     } catch (error) {
@@ -156,7 +181,10 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
       if (this.onFieldsUpdate) {
         this.onFieldsUpdate({ fields: {} });
       }
-      alert(error instanceof Error ? error.message : 'Erro ao processar áudio');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar áudio';
+      if (this.onStatusChange) {
+        this.onStatusChange('error', errorMessage);
+      }
     }
   }
 
