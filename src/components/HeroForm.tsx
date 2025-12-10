@@ -10,6 +10,12 @@ const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00
 
 const ART_STYLES = [
   {
+    id: 'exemplo_06',
+    name: 'Flat 2D Vector',
+    image: '/exemplo_06.jpg',
+    prompt: 'Flat 2D vector illustration, infographic motion-design aesthetic, bold clean outlines, simplified geometric shapes, bright saturated colors, expressive cartoon faces, minimal shading, high-contrast pale blue background, dynamic composition, educational visual tone, smooth subtle gradients, clear readable forms, youtube-thumbnail-friendly layout'
+  },
+  {
     id: 'exemplo_01',
     name: 'Historical Semi-Realistic',
     image: '/exemplo_01.jpg',
@@ -32,18 +38,6 @@ const ART_STYLES = [
     name: 'Art Nouveau',
     image: '/exemplo_04.jpg',
     prompt: 'Vintage Art Nouveau illustrative style, delicate ink linework, soft digital watercolor textures, pastel beige and brown palette, elegant period poses, Belle Époque aesthetics, minimal shading, warm paper-like background, romantic poetic atmosphere, decorative floral elements, graceful composition, café scene'
-  },
-  {
-    id: 'exemplo_05',
-    name: 'Retro Pixel Art',
-    image: '/exemplo_05.jpg',
-    prompt: 'Retro pixel art style, 8-bit or 16-bit aesthetic, limited color palette, sharp pixel-perfect edges, nostalgic gaming vibe, dithering effects, chunky blocky characters, classic sprite-based design, retro computer graphics'
-  },
-  {
-    id: 'exemplo_06',
-    name: 'Flat 2D Vector',
-    image: '/exemplo_06.jpg',
-    prompt: 'Flat 2D vector illustration, infographic motion-design aesthetic, bold clean outlines, simplified geometric shapes, bright saturated colors, expressive cartoon faces, minimal shading, high-contrast pale blue background, dynamic composition, educational visual tone, smooth subtle gradients, clear readable forms, youtube-thumbnail-friendly layout'
   }
 ];
 
