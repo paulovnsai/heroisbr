@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, FileText, Copy } from 'lucide-react';
+import { X, User, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { AudioRecorder } from './AudioRecorder';
@@ -24,7 +24,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showWebhookPayload, setShowWebhookPayload] = useState(false);
 
   const handleTranscriptionComplete = (data: any) => {
     setFormData((prev) => ({
@@ -34,22 +33,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     }));
   };
 
-  const getWebhookPayload = () => {
-    return {
-      name: formData.name,
-      ideia: formData.ideia,
-      storylength: formData.storylength,
-    };
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      alert('JSON copiado para a área de transferência!');
-    } catch (err) {
-      console.error('Erro ao copiar:', err);
-    }
-  };
 
   const uploadImageFromUrl = async (imageUrl: string, heroId: string): Promise<string | null> => {
     try {
@@ -338,13 +321,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               Cancelar
             </button>
             <button
-              type="button"
-              onClick={() => setShowWebhookPayload(true)}
-              className="flex-1 px-6 py-3 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium"
-            >
-              Ver Requisição
-            </button>
-            <button
               type="submit"
               disabled={loading}
               className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -354,64 +330,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
           </div>
         </form>
       </div>
-
-      {showWebhookPayload && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-800">Requisição para o Webhook</h3>
-              <button
-                onClick={() => setShowWebhookPayload(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">URL do Webhook</label>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <code className="text-sm text-gray-800 break-all">{WEBHOOK_URL}</code>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-semibold text-gray-700">Corpo da Requisição (JSON)</label>
-                  <button
-                    onClick={() => copyToClipboard(JSON.stringify(getWebhookPayload(), null, 2))}
-                    className="flex items-center gap-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  >
-                    <Copy size={16} />
-                    Copiar JSON
-                  </button>
-                </div>
-                <div className="bg-gray-900 border border-gray-700 rounded-lg p-4 overflow-x-auto">
-                  <pre className="text-sm text-green-400 font-mono">
-{JSON.stringify(getWebhookPayload(), null, 2)}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Método:</strong> POST<br />
-                  <strong>Headers:</strong> Content-Type: application/json<br />
-                  <strong>Ação:</strong> Esta requisição será enviada automaticamente quando você registrar ou atualizar.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowWebhookPayload(false)}
-                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-              >
-                Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

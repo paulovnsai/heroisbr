@@ -7,6 +7,47 @@ import { SuccessModal } from './SuccessModal';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
+const generatePlaceholderImage = (description: string, name: string) => {
+  const colors = [
+    ['#3b82f6', '#1e40af'],
+    ['#10b981', '#047857'],
+    ['#f59e0b', '#d97706'],
+    ['#ef4444', '#b91c1c'],
+    ['#8b5cf6', '#6d28d9'],
+    ['#ec4899', '#be185d'],
+  ];
+
+  const hashCode = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  };
+
+  const colorPair = colors[hashCode(name) % colors.length];
+  const text = name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+
+  const svg = `
+    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:${colorPair[0]};stop-opacity:1" />
+          <stop offset="100%" style="stop-color:${colorPair[1]};stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="600" fill="url(#grad)"/>
+      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Arial, sans-serif" font-size="180" font-weight="bold"
+            fill="white" opacity="0.9">${text}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
 export function HeroList() {
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [filteredHeroes, setFilteredHeroes] = useState<Hero[]>([]);
@@ -220,7 +261,7 @@ export function HeroList() {
             >
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={hero.hero_image_url || "https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=800"}
+                  src={hero.hero_image_url || generatePlaceholderImage(hero.ideia || '', hero.name)}
                   alt={hero.name}
                   className="w-full h-full object-cover"
                 />
@@ -378,7 +419,7 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="relative h-64 overflow-hidden">
           <img
-            src={hero.hero_image_url || "https://images.pexels.com/photos/2962135/pexels-photo-2962135.jpeg?auto=compress&cs=tinysrgb&w=1200"}
+            src={hero.hero_image_url || generatePlaceholderImage(hero.ideia || '', hero.name)}
             alt={hero.name}
             className="w-full h-full object-cover"
           />
