@@ -38,6 +38,12 @@ const ART_STYLES = [
     name: 'Art Nouveau',
     image: '/exemplo_04.jpg',
     prompt: 'Vintage Art Nouveau illustrative style, delicate ink linework, soft digital watercolor textures, pastel beige and brown palette, elegant period poses, Belle Époque aesthetics, minimal shading, warm paper-like background, romantic poetic atmosphere, decorative floral elements, graceful composition, café scene'
+  },
+  {
+    id: 'exemplo_05',
+    name: 'Pixel Art (16-bit)',
+    image: '/exemplo_05.jpg',
+    prompt: 'Modern pixel art style, 16-bit or 32-bit aesthetic, rich color palette, detailed pixel work, office or workspace environment, atmospheric lighting with highlights and shadows, isometric or frontal perspective, cozy interior setting, decorative elements like plants and frames, smooth dithering, nostalgic yet contemporary feel, indie game quality'
   }
 ];
 
@@ -360,7 +366,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               Estilo Visual
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {ART_STYLES.filter(style => style.id !== 'exemplo_06').map((style) => (
+              {ART_STYLES.map((style) => (
                 <button
                   key={style.id}
                   type="button"
