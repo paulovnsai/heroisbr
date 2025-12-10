@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Loader, CheckCircle, X, Download, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -23,8 +23,15 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [fileUrl, setFileUrl] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
+    if (hasProcessedRef.current) {
+      console.log('Webhook ja foi processado, pulando...');
+      return;
+    }
+
+    hasProcessedRef.current = true;
     let isCancelled = false;
 
     const processWebhook = async () => {
@@ -107,7 +114,7 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [heroId]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4 z-50">
