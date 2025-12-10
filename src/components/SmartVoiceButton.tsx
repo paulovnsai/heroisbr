@@ -8,17 +8,20 @@ interface SmartVoiceButtonProps {
 
 export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [recorder] = useState(() => new SmartVoiceRecorder());
 
   const handleToggleRecording = async () => {
     try {
       if (isRecording) {
-        recorder.stopRecording();
         setIsRecording(false);
+        setIsProcessing(true);
+        recorder.stopRecording();
       } else {
         await recorder.startRecording((fields) => {
           if (Object.keys(fields).length > 0) {
             onFieldsExtracted(fields);
+            setIsProcessing(false);
           }
         });
         setIsRecording(true);
@@ -27,6 +30,7 @@ export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
       console.error('Erro ao processar voz:', error);
       alert(error instanceof Error ? error.message : 'Erro ao processar áudio');
       setIsRecording(false);
+      setIsProcessing(false);
     }
   };
 
@@ -34,16 +38,24 @@ export function SmartVoiceButton({ onFieldsExtracted }: SmartVoiceButtonProps) {
     <button
       type="button"
       onClick={handleToggleRecording}
+      disabled={isProcessing}
       className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-        isRecording
+        isProcessing
+          ? 'bg-blue-500 text-white cursor-wait shadow-lg'
+          : isRecording
           ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg'
           : 'bg-green-500 text-white hover:bg-green-600 shadow-md'
       }`}
     >
-      {isRecording ? (
+      {isProcessing ? (
+        <>
+          <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+          <span className="animate-pulse">Processando áudio...</span>
+        </>
+      ) : isRecording ? (
         <>
           <Square size={20} fill="white" />
-          <span className="animate-pulse">Ouvindo em tempo real...</span>
+          <span className="animate-pulse">Gravando... Clique para parar</span>
         </>
       ) : (
         <>
