@@ -135,43 +135,7 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
         delete fields.status;
 
         if (Object.keys(fields).length > 0 && this.onFieldsUpdate) {
-          console.log('Chamando webhook do n8n...');
-
-          try {
-            const webhookPayload = {
-              name: fields.name || '',
-              ideia: fields.ideia || '',
-              observacao: fields.observacao || '',
-              local: fields.local || '',
-              ano: fields.ano || '',
-              status: 'Pouco lembrado nacionalmente',
-              artstyle: fields.artstyle || 'Historical semi-realistic digital painting',
-              storylength: fields.storylength || '20',
-            };
-
-            const webhookResponse = await fetch(WEBHOOK_URL, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(webhookPayload),
-            });
-
-            let n8nLink: string | undefined;
-
-            if (webhookResponse.ok) {
-              const webhookData = await webhookResponse.json();
-              n8nLink = webhookData.fileUrl || webhookData.file_url || webhookData.url;
-              console.log('Link do n8n:', n8nLink);
-            } else {
-              console.warn('Webhook retornou erro:', webhookResponse.statusText);
-            }
-
-            this.onFieldsUpdate({ fields, n8nLink });
-          } catch (webhookError) {
-            console.error('Erro ao chamar webhook:', webhookError);
-            this.onFieldsUpdate({ fields });
-          }
+          this.onFieldsUpdate({ fields });
         }
       }
     } catch (error) {
