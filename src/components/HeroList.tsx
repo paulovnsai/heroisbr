@@ -3,7 +3,6 @@ import { Plus, Search, Filter, Edit, Trash2, Eye, MapPin, Calendar, Download, Lo
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { HeroForm } from './HeroForm';
-import { ProcessingScreen } from './ProcessingScreen';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -16,8 +15,6 @@ export function HeroList() {
   const [showForm, setShowForm] = useState(false);
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
   const [viewingHero, setViewingHero] = useState<Hero | null>(null);
-  const [processingHeroId, setProcessingHeroId] = useState<string | null>(null);
-  const [processingHeroData, setProcessingHeroData] = useState<any>(null);
 
   useEffect(() => {
     fetchHeroes();
@@ -85,19 +82,6 @@ export function HeroList() {
   const handleFormClose = () => {
     setShowForm(false);
     setSelectedHero(null);
-  };
-
-  const handleStartProcessing = (heroId: string, heroData: any) => {
-    setShowForm(false);
-    setSelectedHero(null);
-    setProcessingHeroId(heroId);
-    setProcessingHeroData(heroData);
-  };
-
-  const handleProcessingBack = () => {
-    setProcessingHeroId(null);
-    setProcessingHeroData(null);
-    fetchHeroes();
   };
 
   const getStatusColor = (status: string) => {
@@ -287,15 +271,6 @@ export function HeroList() {
           hero={selectedHero || undefined}
           onClose={handleFormClose}
           onSuccess={fetchHeroes}
-          onStartProcessing={handleStartProcessing}
-        />
-      )}
-
-      {processingHeroId && processingHeroData && (
-        <ProcessingScreen
-          heroId={processingHeroId}
-          heroData={processingHeroData}
-          onBack={handleProcessingBack}
         />
       )}
 

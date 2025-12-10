@@ -5,14 +5,15 @@ import type { Database } from '../lib/database.types';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
+const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00-b537cfcbdcc7';
+
 interface HeroFormProps {
   hero?: Hero;
   onClose: () => void;
   onSuccess: () => void;
-  onStartProcessing: (heroId: string, heroData: any) => void;
 }
 
-export function HeroForm({ hero, onClose, onSuccess, onStartProcessing }: HeroFormProps) {
+export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [formData, setFormData] = useState({
     name: hero?.name || '',
     ideia: hero?.ideia || '',
@@ -95,7 +96,9 @@ export function HeroForm({ hero, onClose, onSuccess, onStartProcessing }: HeroFo
         heroId = data.id;
       }
 
-      const heroData = {
+      console.log('Herói salvo, enviando para webhook...');
+
+      const webhookPayload = {
         name: formData.name,
         ideia: formData.ideia,
         observacao: formData.observacao,
@@ -106,9 +109,56 @@ export function HeroForm({ hero, onClose, onSuccess, onStartProcessing }: HeroFo
         storylength: formData.storylength,
       };
 
-      onStartProcessing(heroId, heroData);
+      const webhookResponse = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+
+      console.log('Status da resposta do webhook:', webhookResponse.status);
+
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        console.error('Erro do webhook:', errorText);
+
+        await supabase
+          .from('heroes')
+          .update({ processing_status: 'error' })
+          .eq('id', heroId);
+
+        throw new Error(`Erro ao processar no webhook: ${webhookResponse.status}`);
+      }
+
+      const webhookData = await webhookResponse.json();
+      console.log('Resposta do webhook:', webhookData);
+
+      if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
+        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+        console.log('URL do arquivo recebida:', returnedFileUrl);
+
+        await supabase
+          .from('heroes')
+          .update({
+            file_url: returnedFileUrl,
+            processing_status: 'completed'
+          })
+          .eq('id', heroId);
+      } else {
+        console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
+
+        await supabase
+          .from('heroes')
+          .update({ processing_status: 'completed' })
+          .eq('id', heroId);
+      }
+
+      onSuccess();
+      onClose();
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
+      console.error('Erro ao processar:', err);
     } finally {
       setLoading(false);
     }
