@@ -100,9 +100,9 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
 
         if (isCancelled) return;
 
-        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url ||
-                                webhookData.fileurl || webhookData.file_Url || webhookData.downloadUrl ||
-                                webhookData.download_url || webhookData.link;
+        const returnedFileUrl = webhookData.fileUrlmp4 || webhookData.fileUrl || webhookData.file_url ||
+                                webhookData.url || webhookData.fileurl || webhookData.file_Url ||
+                                webhookData.downloadUrl || webhookData.download_url || webhookData.link;
 
         const content = webhookData.content || webhookData.story || webhookData.text ||
                        webhookData.generatedContent || webhookData.generated_content ||

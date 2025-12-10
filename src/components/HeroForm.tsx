@@ -19,6 +19,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
   const [formData, setFormData] = useState({
     name: hero?.name || '',
     ideia: hero?.ideia || '',
+    storylength: hero?.storylength || '1 minuto',
   });
 
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     return {
       name: formData.name,
       ideia: formData.ideia,
+      storylength: formData.storylength,
     };
   };
 
@@ -95,6 +97,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         heroId: heroId,
         name: formData.name,
         ideia: formData.ideia,
+        storylength: formData.storylength,
       };
 
       console.log('Enviando para webhook com heroId:', heroId);
@@ -135,15 +138,15 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         webhookData = {};
       }
 
-      const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url ||
-                              webhookData.fileurl || webhookData.file_Url || webhookData.downloadUrl ||
-                              webhookData.download_url || webhookData.link;
+      const returnedFileUrl = webhookData.fileUrlmp4 || webhookData.fileUrl || webhookData.file_url ||
+                              webhookData.url || webhookData.fileurl || webhookData.file_Url ||
+                              webhookData.downloadUrl || webhookData.download_url || webhookData.link;
 
       const content = webhookData.content || webhookData.story || webhookData.text ||
                      webhookData.generatedContent || webhookData.generated_content ||
                      webhookData.output || webhookData.result || '';
 
-      const capaUrl = webhookData.capa || webhookData.coverImage || webhookData.cover;
+      const capaUrl = webhookData.fileUrlpng || webhookData.capa || webhookData.coverImage || webhookData.cover;
 
       console.log('✅ URL do arquivo:', returnedFileUrl || 'Não fornecida');
       console.log('✅ Conteúdo:', content ? content.substring(0, 50) + '...' : 'Não fornecido');
@@ -210,7 +213,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         ano: '',
         status: 'Pouco lembrado nacionalmente',
         artstyle: 'Historical semi-realistic digital painting',
-        storylength: '1 minuto',
+        storylength: formData.storylength,
         hero_image_url: '',
         alias: formData.name,
         powers: [],
@@ -308,6 +311,22 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               placeholder="Descreva o conteúdo do vídeo..."
             />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Duração do Vídeo
+            </label>
+            <select
+              value={formData.storylength}
+              onChange={(e) => setFormData({ ...formData, storylength: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="30 segundos">30 segundos</option>
+              <option value="1 minuto">1 minuto</option>
+              <option value="2 minutos">2 minutos</option>
+              <option value="3 minutos">3 minutos</option>
+            </select>
           </div>
 
           <div className="flex gap-3 pt-4">
