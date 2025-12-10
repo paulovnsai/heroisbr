@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, FileText } from 'lucide-react';
+import { X, User, FileText, Palette } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { AudioRecorder } from './AudioRecorder';
@@ -7,6 +7,45 @@ import { AudioRecorder } from './AudioRecorder';
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
 const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00-b537cfcbdcc7';
+
+const ART_STYLES = [
+  {
+    id: 'exemplo_01',
+    name: 'Historical Semi-Realistic',
+    image: '/exemplo_01.jpg',
+    prompt: 'Historical semi-realistic digital painting'
+  },
+  {
+    id: 'exemplo_02',
+    name: '3D Animation (Pixar)',
+    image: '/exemplo_02.jpg',
+    prompt: 'ultra-cute 3D animation style, soft lighting, pastel color palette, cinematic bokeh, smooth fluffy textures, expressive eyes, storybook atmosphere, Pixar-quality'
+  },
+  {
+    id: 'exemplo_03',
+    name: 'Cinematic Minimalism',
+    image: '/exemplo_03.jpg',
+    prompt: 'Cinematic painterly minimalism, simplified facial features, warm diffused lighting, smooth brushwork, minimal background noise, emotional focus on characters, natural color palette, subtle contour lines, modern documentary illustration style'
+  },
+  {
+    id: 'exemplo_04',
+    name: 'Art Nouveau',
+    image: '/exemplo_04.jpg',
+    prompt: 'Vintage Art Nouveau illustrative style, delicate ink linework, soft digital watercolor textures, pastel Mediterranean palette, elegant feminine poses, Belle Époque aesthetics, minimal shading, warm paper-like background, romantic poetic atmosphere'
+  },
+  {
+    id: 'exemplo_05',
+    name: 'Retro Pixel Art',
+    image: '/exemplo_05.jpg',
+    prompt: 'Art Style: Retro Pixel Art (8-bit / 16-bit)'
+  },
+  {
+    id: 'exemplo_06',
+    name: 'Flat 2D Vector',
+    image: '/exemplo_06.jpg',
+    prompt: 'flat 2d vector illustration, infographic motion-design aesthetic, bold clean outlines, simplified geometric shapes, bright saturated colors, expressive cartoon faces, minimal shading, high-contrast background, dynamic composition, educational visual tone, smooth subtle gradients, clear readable forms, youtube-thumbnail-friendly layout'
+  }
+];
 
 interface HeroFormProps {
   hero?: Hero;
@@ -20,6 +59,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     name: hero?.name || '',
     ideia: hero?.ideia || '',
     storylength: hero?.storylength || '1 minuto',
+    artStyle: hero?.art_style || ART_STYLES[0].prompt,
   });
 
   const [loading, setLoading] = useState(false);
@@ -81,6 +121,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         name: formData.name,
         ideia: formData.ideia,
         storylength: formData.storylength,
+        artStyle: formData.artStyle,
       };
 
       console.log('Enviando para webhook com heroId:', heroId);
@@ -202,6 +243,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         powers: [],
         level: 1,
         processing_status: 'processing',
+        art_style: formData.artStyle,
       };
 
       let heroId: string;
@@ -310,6 +352,51 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               <option value="2 minutos">2 minutos</option>
               <option value="3 minutos">3 minutos</option>
             </select>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+              <Palette size={18} />
+              Estilo Visual
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {ART_STYLES.filter(style => style.id !== 'exemplo_06').map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, artStyle: style.prompt })}
+                  className={`relative group overflow-hidden rounded-lg border-2 transition-all ${
+                    formData.artStyle === style.prompt
+                      ? 'border-green-500 ring-2 ring-green-200'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={style.image}
+                      alt={style.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <div className={`absolute inset-0 flex items-end justify-center pb-2 transition-opacity ${
+                    formData.artStyle === style.prompt
+                      ? 'bg-gradient-to-t from-green-900/80 to-transparent'
+                      : 'bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100'
+                  }`}>
+                    <span className="text-white text-xs font-medium px-2 text-center">
+                      {style.name}
+                    </span>
+                  </div>
+                  {formData.artStyle === style.prompt && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
