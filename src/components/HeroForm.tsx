@@ -95,7 +95,10 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       let webhookData;
       try {
         webhookData = await webhookResponse.json();
-        console.log('Resposta do webhook:', webhookData);
+        console.log('====== RESPOSTA DO WEBHOOK ======');
+        console.log('Dados completos:', webhookData);
+        console.log('Todas as chaves:', Object.keys(webhookData));
+        console.log('================================');
       } catch (jsonError) {
         console.log('Resposta não é JSON, mas webhook retornou sucesso');
         webhookData = {};
@@ -108,6 +111,9 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       const content = webhookData.content || webhookData.story || webhookData.text ||
                      webhookData.generatedContent || webhookData.generated_content ||
                      webhookData.output || webhookData.result || '';
+
+      console.log('URL do arquivo extraída:', returnedFileUrl || 'NENHUMA');
+      console.log('Conteúdo extraído:', content ? content.substring(0, 50) + '...' : 'NENHUM');
 
       const updateData: any = {
         processing_status: 'completed'

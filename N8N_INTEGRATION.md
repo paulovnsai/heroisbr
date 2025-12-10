@@ -127,3 +127,59 @@ O sistema aceita qualquer um destes campos:
 3. Se o N8N não retornar status, será assumido `"completed"` automaticamente
 4. O sistema detecta automaticamente qual campo foi usado para cada tipo de dado
 5. O conteúdo gerado é exibido em uma caixa de texto na interface, permitindo copiar ou baixar como `.txt`
+
+## Como Debugar Problemas
+
+### Se o link do arquivo está vazio:
+
+1. **Abra o Console do Navegador** (F12 ou Ctrl+Shift+I)
+2. **Vá para a aba Console**
+3. **Registre um novo herói**
+4. **Procure por estas mensagens:**
+
+   ```
+   ====== RESPOSTA DO WEBHOOK ======
+   Dados completos: {...}
+   Todas as chaves: [...]
+   ================================
+   URL do arquivo extraída: ...
+   Conteúdo extraído: ...
+   ```
+
+5. **Verifique:**
+   - O N8N está retornando algum dado?
+   - Quais são as chaves da resposta?
+   - A URL do arquivo está presente?
+   - O nome da chave é diferente dos aceitos?
+
+### Exemplo de Debug:
+
+Se você ver no console:
+```
+Todas as chaves: ["downloadLink", "text"]
+URL do arquivo extraída: NENHUMA
+```
+
+Isso significa que o N8N está retornando `downloadLink` (que não é aceito). Você precisa:
+- Configurar o N8N para retornar `fileUrl` OU `downloadUrl` OU `link`
+- OU adicionar `downloadLink` na lista de campos aceitos
+
+### Soluções Comuns:
+
+#### Problema: N8N retorna um objeto aninhado
+Se o N8N retornar algo como:
+```json
+{
+  "data": {
+    "fileUrl": "https://...",
+    "content": "..."
+  }
+}
+```
+
+A aplicação não vai encontrar os campos. Configure o N8N para retornar os campos no nível raiz.
+
+#### Problema: Nome do campo diferente
+Se o N8N usa um nome de campo diferente (ex: `pdfUrl`, `downloadLink`), você tem duas opções:
+1. Configurar o N8N para usar um dos nomes aceitos
+2. Adicionar o novo nome no código (frontend e edge function)
