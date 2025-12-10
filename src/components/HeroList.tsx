@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, MapPin, Calendar, Download, Loader } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Eye, MapPin, Calendar, Download, Loader, Copy, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { HeroForm } from './HeroForm';
@@ -249,8 +249,14 @@ export function HeroList() {
                   {hero.ideia}
                 </p>
 
-                <div className="mb-3">
+                <div className="mb-3 flex flex-wrap gap-2">
                   {getProcessingStatusBadge(hero.processing_status)}
+                  {hero.generated_content && (
+                    <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">
+                      <Eye size={12} />
+                      História disponível
+                    </span>
+                  )}
                 </div>
 
                 {hero.file_url && (
@@ -330,6 +336,8 @@ interface HeroDetailsProps {
 }
 
 function HeroDetails({ hero, onClose }: HeroDetailsProps) {
+  const [copied, setCopied] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Lembrado nacionalmente':
@@ -340,6 +348,28 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
         return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const handleCopy = async () => {
+    if (hero.generated_content) {
+      await navigator.clipboard.writeText(hero.generated_content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDownload = () => {
+    if (hero.generated_content) {
+      const blob = new Blob([hero.generated_content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${hero.name.replace(/\s+/g, '_')}_historia.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -361,7 +391,7 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
             onClick={onClose}
             className="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 rounded-full p-2 transition-all"
           >
-            <Eye size={20} />
+            <X size={20} />
           </button>
         </div>
 
@@ -417,6 +447,33 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Estilo Artístico</h3>
               <p className="text-gray-700">{hero.artstyle}</p>
+            </div>
+          )}
+
+          {hero.generated_content && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">História Gerada</h3>
+              <div className="bg-gray-50 rounded-lg p-6 shadow-inner max-h-80 overflow-y-auto mb-3">
+                <pre className="whitespace-pre-wrap text-gray-800 font-sans text-base leading-relaxed">
+                  {hero.generated_content}
+                </pre>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCopy}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg font-semibold"
+                >
+                  {copied ? <Check size={20} /> : <Copy size={20} />}
+                  {copied ? 'Copiado!' : 'Copiar Texto'}
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg font-semibold"
+                >
+                  <Download size={20} />
+                  Baixar .txt
+                </button>
+              </div>
             </div>
           )}
 
