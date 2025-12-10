@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import { X, User, MapPin, Calendar, FileText, Palette, Copy } from 'lucide-react';
+import { X, User, MapPin, Calendar, FileText, Palette, Copy, Loader, CheckCircle, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
-import { SmartVoiceButton } from './SmartVoiceButton';
-import { VoiceProcessingScreen } from './VoiceProcessingScreen';
-import { ProcessingStatus } from '../lib/smartVoiceRecorder';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -32,34 +29,9 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
-  const [voiceProcessingStatus, setVoiceProcessingStatus] = useState<ProcessingStatus | null>(null);
-  const [voiceErrorMessage, setVoiceErrorMessage] = useState<string>('');
-
-  const handleVoiceStatusChange = (status: ProcessingStatus, error?: string) => {
-    setVoiceProcessingStatus(status);
-    if (error) {
-      setVoiceErrorMessage(error);
-    }
-  };
-
-  const handleCloseVoiceProcessing = () => {
-    setVoiceProcessingStatus(null);
-    setVoiceErrorMessage('');
-  };
-
-  const handleVoiceFieldsExtracted = (fields: Record<string, string>) => {
-    const cleanedFields = Object.entries(fields).reduce((acc, [key, value]) => {
-      if (value && value.trim() !== '') {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as Record<string, string>);
-
-    setFormData(prev => ({
-      ...prev,
-      ...cleanedFields,
-    }));
-  };
+  const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [fileUrl, setFileUrl] = useState<string>('');
+  const [processingError, setProcessingError] = useState<string>('');
 
   const getWebhookPayload = () => {
     return {
@@ -87,6 +59,7 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setProcessingStatus('processing');
 
     try {
       const dataToInsert = {
@@ -153,21 +126,25 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
       const webhookData = await webhookResponse.json();
 
       if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
-        const fileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
 
         await supabase
           .from('heroes')
           .update({
-            file_url: fileUrl,
+            file_url: returnedFileUrl,
             processing_status: 'completed'
           })
           .eq('id', heroId);
-      }
 
-      onSuccess();
-      onClose();
+        setFileUrl(returnedFileUrl);
+        setProcessingStatus('success');
+      } else {
+        throw new Error('Webhook não retornou URL do arquivo');
+      }
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
+      setProcessingError(err.message || 'Ocorreu um erro ao processar');
+      setProcessingStatus('error');
     } finally {
       setLoading(false);
     }
@@ -194,21 +171,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
               {error}
             </div>
           )}
-
-          <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-            <div className="flex flex-col gap-3">
-              <div>
-                <h3 className="font-semibold text-green-800 mb-1">Preencher por Voz</h3>
-                <p className="text-sm text-green-700 mb-3">
-                  Fale os campos e conteúdos. Ex: "nome João Silva, descrição salvou crianças, local São Paulo, ano 2020"
-                </p>
-              </div>
-              <SmartVoiceButton
-                onFieldsExtracted={handleVoiceFieldsExtracted}
-                onStatusChange={handleVoiceStatusChange}
-              />
-            </div>
-          </div>
 
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -413,12 +375,68 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         </div>
       )}
 
-      {voiceProcessingStatus && (
-        <VoiceProcessingScreen
-          status={voiceProcessingStatus}
-          onClose={handleCloseVoiceProcessing}
-          errorMessage={voiceErrorMessage}
-        />
+      {processingStatus !== 'idle' && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70]">
+          <div className={`rounded-2xl max-w-md w-full p-8 shadow-2xl ${
+            processingStatus === 'processing' ? 'bg-gradient-to-br from-blue-50 to-blue-100' :
+            processingStatus === 'success' ? 'bg-gradient-to-br from-green-50 to-green-100' :
+            'bg-gradient-to-br from-red-50 to-red-100'
+          }`}>
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="p-6 bg-white rounded-full shadow-lg">
+                {processingStatus === 'processing' && (
+                  <Loader size={64} className="text-blue-500 animate-spin" />
+                )}
+                {processingStatus === 'success' && (
+                  <CheckCircle size={64} className="text-green-500" />
+                )}
+                {processingStatus === 'error' && (
+                  <X size={64} className="text-red-500" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-gray-800">
+                  {processingStatus === 'processing' && 'Processando...'}
+                  {processingStatus === 'success' && 'Concluído!'}
+                  {processingStatus === 'error' && 'Erro'}
+                </h2>
+                <p className="text-gray-700 text-lg">
+                  {processingStatus === 'processing' && 'Aguardando processamento do n8n. Isso pode levar alguns instantes...'}
+                  {processingStatus === 'success' && 'Arquivo gerado com sucesso! Clique no link abaixo para baixar.'}
+                  {processingStatus === 'error' && (processingError || 'Ocorreu um erro ao processar.')}
+                </p>
+              </div>
+
+              {processingStatus === 'success' && fileUrl && (
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg font-semibold text-lg"
+                >
+                  <Download size={20} />
+                  Baixar Arquivo
+                </a>
+              )}
+
+              {(processingStatus === 'success' || processingStatus === 'error') && (
+                <button
+                  onClick={() => {
+                    setProcessingStatus('idle');
+                    if (processingStatus === 'success') {
+                      onSuccess();
+                      onClose();
+                    }
+                  }}
+                  className="w-full px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-all shadow-md hover:shadow-lg font-semibold text-lg"
+                >
+                  {processingStatus === 'success' ? 'Fechar' : 'Tentar Novamente'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
