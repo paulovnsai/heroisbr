@@ -49,6 +49,46 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     }
   };
 
+  const uploadImageFromUrl = async (imageUrl: string, heroId: string): Promise<string | null> => {
+    try {
+      console.log('Baixando imagem da URL:', imageUrl);
+
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        console.error('Erro ao baixar imagem:', imageResponse.status);
+        return null;
+      }
+
+      const blob = await imageResponse.blob();
+      const fileExt = imageUrl.split('.').pop()?.split('?')[0] || 'png';
+      const fileName = `${heroId}-${Date.now()}.${fileExt}`;
+
+      console.log('Fazendo upload da imagem para Supabase:', fileName);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('hero-images')
+        .upload(fileName, blob, {
+          contentType: blob.type,
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Erro ao fazer upload:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('hero-images')
+        .getPublicUrl(fileName);
+
+      console.log('Imagem carregada com sucesso:', publicUrl);
+      return publicUrl;
+    } catch (err) {
+      console.error('Erro ao processar imagem:', err);
+      return null;
+    }
+  };
+
   const processWebhook = async (heroId: string, heroName: string) => {
     try {
       const webhookPayload = {
@@ -90,12 +130,6 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         console.log('Todas as chaves:', Object.keys(webhookData));
         console.log('Valores:', Object.values(webhookData));
         console.log('================================');
-
-        console.log('⚠️ ATENÇÃO: Seu N8N está retornando apenas:', webhookData);
-        console.log('⚠️ O sistema precisa receber pelo menos um destes campos:');
-        console.log('   - fileUrl (ou file_url, url, link, downloadUrl)');
-        console.log('   - content (ou story, text, generatedContent)');
-        console.log('================================');
       } catch (jsonError) {
         console.log('Resposta não é JSON, mas webhook retornou sucesso');
         webhookData = {};
@@ -109,17 +143,11 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
                      webhookData.generatedContent || webhookData.generated_content ||
                      webhookData.output || webhookData.result || '';
 
-      if (!returnedFileUrl && !content) {
-        console.error('❌ PROBLEMA: N8N não retornou fileUrl nem content!');
-        console.error('📋 Configure seu N8N para retornar JSON assim:');
-        console.error(`{
-  "fileUrl": "https://seu-servidor.com/arquivo.pdf",
-  "content": "História gerada aqui..."
-}`);
-      } else {
-        console.log('✅ URL do arquivo:', returnedFileUrl || 'Não fornecida');
-        console.log('✅ Conteúdo:', content ? content.substring(0, 50) + '...' : 'Não fornecido');
-      }
+      const capaUrl = webhookData.capa || webhookData.coverImage || webhookData.cover;
+
+      console.log('✅ URL do arquivo:', returnedFileUrl || 'Não fornecida');
+      console.log('✅ Conteúdo:', content ? content.substring(0, 50) + '...' : 'Não fornecido');
+      console.log('✅ URL da capa:', capaUrl || 'Não fornecida');
 
       const updateData: any = {
         processing_status: 'completed'
@@ -133,8 +161,15 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       if (content) {
         console.log('Conteúdo recebido:', content.substring(0, 100) + '...');
         updateData.generated_content = content;
-      } else {
-        console.log('Webhook respondeu com sucesso, mas sem conteúdo');
+      }
+
+      if (capaUrl) {
+        console.log('Processando imagem de capa...');
+        const uploadedImageUrl = await uploadImageFromUrl(capaUrl, heroId);
+        if (uploadedImageUrl) {
+          updateData.hero_image_url = uploadedImageUrl;
+          console.log('Imagem de capa atualizada:', uploadedImageUrl);
+        }
       }
 
       const { error: updateError } = await supabase
