@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, FileText, Palette } from 'lucide-react';
+import { X, User, FileText, Palette, Code } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { AudioRecorder } from './AudioRecorder';
@@ -64,6 +64,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPayload, setShowPayload] = useState(false);
 
   const handleTranscriptionComplete = (data: any) => {
     setFormData((prev) => ({
@@ -398,6 +399,26 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               ))}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowPayload(!showPayload)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Code size={16} />
+            {showPayload ? 'Ocultar' : 'Ver'} Payload N8N
+          </button>
+
+          {showPayload && (
+            <div className="bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+              <pre>{JSON.stringify({
+                name: formData.name,
+                ideia: formData.ideia,
+                storylength: formData.storylength,
+                artStyle: formData.artStyle,
+              }, null, 2)}</pre>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
             <button
