@@ -25,8 +25,12 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
+    let isCancelled = false;
+
     const processWebhook = async () => {
       try {
+        console.log('Enviando requisicao para o webhook...');
+
         const webhookPayload = {
           name: heroData.name,
           ideia: heroData.ideia,
@@ -38,6 +42,8 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
           storylength: heroData.storylength,
         };
 
+        console.log('Payload:', webhookPayload);
+
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
@@ -46,14 +52,22 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
           body: JSON.stringify(webhookPayload),
         });
 
+        console.log('Status da resposta:', webhookResponse.status);
+
         if (!webhookResponse.ok) {
-          throw new Error('Erro ao processar no webhook');
+          const errorText = await webhookResponse.text();
+          console.error('Erro do webhook:', errorText);
+          throw new Error(`Erro ao processar no webhook: ${webhookResponse.status}`);
         }
 
         const webhookData = await webhookResponse.json();
+        console.log('Resposta do webhook:', webhookData);
+
+        if (isCancelled) return;
 
         if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
           const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+          console.log('URL do arquivo recebida:', returnedFileUrl);
 
           await supabase
             .from('heroes')
@@ -63,12 +77,19 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
             })
             .eq('id', heroId);
 
-          setFileUrl(returnedFileUrl);
-          setStatus('success');
+          if (!isCancelled) {
+            setFileUrl(returnedFileUrl);
+            setStatus('success');
+          }
         } else {
+          console.error('Webhook nao retornou URL do arquivo');
           throw new Error('Webhook não retornou URL do arquivo');
         }
       } catch (err: any) {
+        console.error('Erro ao processar:', err);
+
+        if (isCancelled) return;
+
         setErrorMessage(err.message || 'Ocorreu um erro ao processar');
         setStatus('error');
 
@@ -82,7 +103,11 @@ export function ProcessingScreen({ heroId, heroData, onBack }: ProcessingScreenP
     };
 
     processWebhook();
-  }, [heroId, heroData]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4 z-50">
