@@ -16,6 +16,7 @@ export class SmartVoiceRecorder {
   private source: MediaStreamAudioSourceNode | null = null;
   private onFieldsUpdate?: (fields: HeroFormData) => void;
   private conversationHistory: string = '';
+  private currentTranscript: string = '';
 
   async startRecording(onFieldsUpdate?: (fields: HeroFormData) => void): Promise<void> {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -62,12 +63,7 @@ Exemplo de resposta:
           input_audio_transcription: {
             model: 'whisper-1'
           },
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 200
-          },
+          turn_detection: null,
           temperature: 0.3
         }
       }));
@@ -103,11 +99,12 @@ Exemplo de resposta:
 
         if (data.type === 'conversation.item.input_audio_transcription.completed') {
           this.conversationHistory += ' ' + data.transcript;
-          this.processTranscript(data.transcript);
+          this.currentTranscript = '';
         }
 
         if (data.type === 'conversation.item.input_audio_transcription.delta') {
-          this.processTranscript(data.delta);
+          this.currentTranscript += data.delta;
+          this.processTranscriptRealTime(this.currentTranscript);
         }
       } catch (error) {
         console.error('Erro ao processar mensagem WebSocket:', error);
@@ -168,36 +165,59 @@ Exemplo de resposta:
     }
   }
 
-  private processTranscript(transcript: string): void {
+  private processTranscriptRealTime(transcript: string): void {
     if (!transcript || !this.onFieldsUpdate) return;
 
     try {
       const fields: HeroFormData = {};
       const text = transcript.toLowerCase();
 
-      const nameMatch = text.match(/nome\s+(?:é\s+)?([a-záàâãéèêíïóôõöúçñ\s]+?)(?:\s+(?:descrição|ideia|local|ano|observação|$))/i);
+      let workingText = text;
+
+      const namePattern = /(?:nome|name)(?:\s+é)?\s+([a-záàâãéèêíïóôõöúçñ\s]{2,}?)(?=\s+(?:descrição|ideia|ideias|local|ano|observação|observações)|$)/i;
+      const nameMatch = workingText.match(namePattern);
       if (nameMatch) {
-        fields.name = nameMatch[1].trim();
+        const name = nameMatch[1].trim();
+        if (name.length >= 2) {
+          fields.name = name;
+          workingText = workingText.replace(nameMatch[0], '');
+        }
       }
 
-      const ideaMatch = text.match(/(?:descrição|ideia)\s+(?:é\s+)?([^.]+?)(?:\s+(?:nome|local|ano|observação|$))/i);
+      const ideaPattern = /(?:descrição|ideia|ideias)(?:\s+é)?\s+(.+?)(?=\s+(?:nome|local|ano|observação|observações)|$)/i;
+      const ideaMatch = workingText.match(ideaPattern);
       if (ideaMatch) {
-        fields.ideia = ideaMatch[1].trim();
+        const ideia = ideaMatch[1].trim();
+        if (ideia.length >= 3) {
+          fields.ideia = ideia;
+          workingText = workingText.replace(ideaMatch[0], '');
+        }
       }
 
-      const localMatch = text.match(/local\s+(?:é\s+)?([a-záàâãéèêíïóôõöúçñ\s]+?)(?:\s+(?:nome|descrição|ideia|ano|observação|$))/i);
+      const localPattern = /(?:local)(?:\s+é)?\s+([a-záàâãéèêíïóôõöúçñ\s\-]{2,}?)(?=\s+(?:nome|descrição|ideia|ideias|ano|observação|observações)|$)/i;
+      const localMatch = workingText.match(localPattern);
       if (localMatch) {
-        fields.local = localMatch[1].trim();
+        const local = localMatch[1].trim();
+        if (local.length >= 2) {
+          fields.local = local;
+          workingText = workingText.replace(localMatch[0], '');
+        }
       }
 
-      const yearMatch = text.match(/ano\s+(?:é\s+)?(\d{4})/i);
+      const yearPattern = /(?:ano)(?:\s+é)?\s+(\d{4})/i;
+      const yearMatch = workingText.match(yearPattern);
       if (yearMatch) {
         fields.ano = yearMatch[1];
+        workingText = workingText.replace(yearMatch[0], '');
       }
 
-      const obsMatch = text.match(/observação\s+(?:é\s+)?([^.]+?)(?:\s+(?:nome|descrição|ideia|local|ano|$))/i);
+      const obsPattern = /(?:observação|observações)(?:\s+é)?\s+(.+?)(?=\s+(?:nome|descrição|ideia|ideias|local|ano)|$)/i;
+      const obsMatch = workingText.match(obsPattern);
       if (obsMatch) {
-        fields.observacao = obsMatch[1].trim();
+        const obs = obsMatch[1].trim();
+        if (obs.length >= 3) {
+          fields.observacao = obs;
+        }
       }
 
       if (Object.keys(fields).length > 0) {
@@ -235,6 +255,7 @@ Exemplo de resposta:
     }
 
     this.conversationHistory = '';
+    this.currentTranscript = '';
   }
 
   isRecording(): boolean {
