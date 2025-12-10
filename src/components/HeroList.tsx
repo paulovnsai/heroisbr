@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Edit, Trash2, Eye, MapPin, Calendar, Download, Lo
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 import { HeroForm } from './HeroForm';
+import { SuccessModal } from './SuccessModal';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -15,6 +16,8 @@ export function HeroList() {
   const [showForm, setShowForm] = useState(false);
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
   const [viewingHero, setViewingHero] = useState<Hero | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<{ fileUrl: string; heroName: string } | null>(null);
 
   useEffect(() => {
     fetchHeroes();
@@ -82,6 +85,17 @@ export function HeroList() {
   const handleFormClose = () => {
     setShowForm(false);
     setSelectedHero(null);
+  };
+
+  const handleProcessingComplete = (fileUrl: string, heroName: string) => {
+    setSuccessData({ fileUrl, heroName });
+    setShowSuccessModal(true);
+    fetchHeroes();
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setSuccessData(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -271,6 +285,15 @@ export function HeroList() {
           hero={selectedHero || undefined}
           onClose={handleFormClose}
           onSuccess={fetchHeroes}
+          onProcessingComplete={handleProcessingComplete}
+        />
+      )}
+
+      {showSuccessModal && successData && (
+        <SuccessModal
+          fileUrl={successData.fileUrl}
+          heroName={successData.heroName}
+          onClose={handleSuccessModalClose}
         />
       )}
 

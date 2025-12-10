@@ -11,9 +11,10 @@ interface HeroFormProps {
   hero?: Hero;
   onClose: () => void;
   onSuccess: () => void;
+  onProcessingComplete?: (fileUrl: string, heroName: string) => void;
 }
 
-export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
+export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: HeroFormProps) {
   const [formData, setFormData] = useState({
     name: hero?.name || '',
     ideia: hero?.ideia || '',
@@ -29,8 +30,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
 
   const getWebhookPayload = () => {
     return {
@@ -51,6 +50,78 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
       alert('JSON copiado para a área de transferência!');
     } catch (err) {
       console.error('Erro ao copiar:', err);
+    }
+  };
+
+  const processWebhook = async (heroId: string, heroName: string) => {
+    try {
+      const webhookPayload = {
+        name: formData.name,
+        ideia: formData.ideia,
+        observacao: formData.observacao,
+        local: formData.local,
+        ano: formData.ano,
+        status: formData.status,
+        artstyle: formData.artstyle,
+        storylength: formData.storylength,
+      };
+
+      console.log('Enviando para webhook...');
+
+      const webhookResponse = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+
+      console.log('Status da resposta do webhook:', webhookResponse.status);
+
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        console.error('Erro do webhook:', errorText);
+
+        await supabase
+          .from('heroes')
+          .update({ processing_status: 'error' })
+          .eq('id', heroId);
+
+        return;
+      }
+
+      const webhookData = await webhookResponse.json();
+      console.log('Resposta do webhook:', webhookData);
+
+      if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
+        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
+        console.log('URL do arquivo recebida:', returnedFileUrl);
+
+        await supabase
+          .from('heroes')
+          .update({
+            file_url: returnedFileUrl,
+            processing_status: 'completed'
+          })
+          .eq('id', heroId);
+
+        if (onProcessingComplete) {
+          onProcessingComplete(returnedFileUrl, heroName);
+        }
+      } else {
+        console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
+
+        await supabase
+          .from('heroes')
+          .update({ processing_status: 'completed' })
+          .eq('id', heroId);
+      }
+    } catch (err: any) {
+      console.error('Erro ao processar webhook:', err);
+      await supabase
+        .from('heroes')
+        .update({ processing_status: 'error' })
+        .eq('id', heroId);
     }
   };
 
@@ -77,6 +148,7 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
       };
 
       let heroId: string;
+      const heroName = formData.name;
 
       if (hero) {
         heroId = hero.id;
@@ -98,144 +170,16 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         heroId = data.id;
       }
 
-      console.log('Herói salvo, enviando para webhook...');
+      onSuccess();
+      onClose();
 
-      const webhookPayload = {
-        name: formData.name,
-        ideia: formData.ideia,
-        observacao: formData.observacao,
-        local: formData.local,
-        ano: formData.ano,
-        status: formData.status,
-        artstyle: formData.artstyle,
-        storylength: formData.storylength,
-      };
-
-      const webhookResponse = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload),
-      });
-
-      console.log('Status da resposta do webhook:', webhookResponse.status);
-
-      if (!webhookResponse.ok) {
-        const errorText = await webhookResponse.text();
-        console.error('Erro do webhook:', errorText);
-
-        await supabase
-          .from('heroes')
-          .update({ processing_status: 'error' })
-          .eq('id', heroId);
-
-        throw new Error(`Erro ao processar no webhook: ${webhookResponse.status}`);
-      }
-
-      const webhookData = await webhookResponse.json();
-      console.log('Resposta do webhook:', webhookData);
-
-      if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
-        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
-        console.log('URL do arquivo recebida:', returnedFileUrl);
-
-        await supabase
-          .from('heroes')
-          .update({
-            file_url: returnedFileUrl,
-            processing_status: 'completed'
-          })
-          .eq('id', heroId);
-
-        setFileUrl(returnedFileUrl);
-      } else {
-        console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
-
-        await supabase
-          .from('heroes')
-          .update({ processing_status: 'completed' })
-          .eq('id', heroId);
-      }
-
-      setSuccess(true);
+      processWebhook(heroId, heroName);
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
       console.error('Erro ao processar:', err);
-    } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg max-w-2xl w-full">
-          <div className="bg-green-600 text-white px-6 py-4 flex justify-between items-center rounded-t-lg">
-            <h2 className="text-2xl font-bold">Processamento Concluído!</h2>
-            <button
-              onClick={() => {
-                onSuccess();
-                onClose();
-              }}
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="p-8 text-center">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Download size={40} className="text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Herói Registrado com Sucesso!</h3>
-              <p className="text-gray-600">O webhook processou os dados e gerou o arquivo.</p>
-            </div>
-
-            {fileUrl ? (
-              <div className="mb-6">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-gray-600 mb-2">Link do arquivo gerado:</p>
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 break-all text-sm"
-                  >
-                    {fileUrl}
-                  </a>
-                </div>
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  <Download size={20} />
-                  Baixar Arquivo
-                </a>
-              </div>
-            ) : (
-              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">O processamento foi concluído, mas nenhum link foi retornado pelo webhook.</p>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                onSuccess();
-                onClose();
-              }}
-              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
