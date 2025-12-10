@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { X, User, MapPin, Calendar, FileText, Image as ImageIcon, Palette, Upload, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
-import { VoiceInput } from './VoiceInput';
+import { SmartVoiceButton } from './SmartVoiceButton';
 
 type Hero = Database['public']['Tables']['heroes']['Row'];
 
@@ -33,6 +33,13 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [imagePreview, setImagePreview] = useState(hero?.hero_image_url || '');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVoiceFieldsExtracted = (fields: Record<string, string>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...fields,
+    }));
+  };
 
   const uploadImage = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
@@ -244,25 +251,33 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
             </div>
           )}
 
+          <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-green-800 mb-1">Preencher por Voz</h3>
+                  <p className="text-sm text-green-700">
+                    Fale os campos e conteúdos. Ex: "nome João Silva, descrição salvou crianças, local São Paulo, ano 2020"
+                  </p>
+                </div>
+                <SmartVoiceButton onFieldsExtracted={handleVoiceFieldsExtracted} />
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
               <User size={18} />
               Nome do Herói
             </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Ex: Professora Heley de Abreu"
-              />
-              <VoiceInput
-                fieldName="nome"
-                onTranscript={(text) => setFormData({ ...formData, name: text })}
-              />
-            </div>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Ex: Professora Heley de Abreu"
+            />
           </div>
 
           <div>
@@ -270,20 +285,14 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
               <FileText size={18} />
               Descrição do Ato Heroico
             </label>
-            <div className="flex gap-2">
-              <textarea
-                required
-                value={formData.ideia}
-                onChange={(e) => setFormData({ ...formData, ideia: e.target.value })}
-                rows={4}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                placeholder="Descreva o que tornou essa pessoa um herói..."
-              />
-              <VoiceInput
-                fieldName="descrição"
-                onTranscript={(text) => setFormData({ ...formData, ideia: text })}
-              />
-            </div>
+            <textarea
+              required
+              value={formData.ideia}
+              onChange={(e) => setFormData({ ...formData, ideia: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              placeholder="Descreva o que tornou essa pessoa um herói..."
+            />
           </div>
 
           <div>
@@ -291,19 +300,13 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
               <FileText size={18} />
               Observações (opcional)
             </label>
-            <div className="flex gap-2">
-              <textarea
-                value={formData.observacao}
-                onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                rows={2}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                placeholder="Informações adicionais..."
-              />
-              <VoiceInput
-                fieldName="observações"
-                onTranscript={(text) => setFormData({ ...formData, observacao: text })}
-              />
-            </div>
+            <textarea
+              value={formData.observacao}
+              onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              placeholder="Informações adicionais..."
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,20 +315,14 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
                 <MapPin size={18} />
                 Local
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  value={formData.local}
-                  onChange={(e) => setFormData({ ...formData, local: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Ex: Janaúba - MG"
-                />
-                <VoiceInput
-                  fieldName="local"
-                  onTranscript={(text) => setFormData({ ...formData, local: text })}
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={formData.local}
+                onChange={(e) => setFormData({ ...formData, local: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Ex: Janaúba - MG"
+              />
             </div>
 
             <div>
@@ -333,20 +330,14 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
                 <Calendar size={18} />
                 Ano
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  value={formData.ano}
-                  onChange={(e) => setFormData({ ...formData, ano: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Ex: 2017"
-                />
-                <VoiceInput
-                  fieldName="ano"
-                  onTranscript={(text) => setFormData({ ...formData, ano: text })}
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={formData.ano}
+                onChange={(e) => setFormData({ ...formData, ano: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Ex: 2017"
+              />
             </div>
           </div>
 
