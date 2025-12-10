@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { heroId, fileUrl, status, content, generatedContent, generated_content, story, text, output, result } = body;
+    const { heroId, fileUrl, fileUrlmp4, fileUrlpng, status, content, generatedContent, generated_content, story, text, output, result } = body;
 
     console.log('Recebido callback do N8N:', body);
 
@@ -42,12 +42,14 @@ Deno.serve(async (req: Request) => {
       processing_status: status || 'completed',
     };
 
-    if (fileUrl) {
-      updateData.file_url = fileUrl;
+    const videoUrl = fileUrlmp4 || fileUrl;
+    if (videoUrl && videoUrl.trim() !== '') {
+      updateData.file_url = videoUrl;
+      console.log('URL do vídeo recebida:', videoUrl);
     }
 
     const generatedText = content || generatedContent || generated_content || story || text || output || result;
-    if (generatedText) {
+    if (generatedText && generatedText.trim() !== '') {
       updateData.generated_content = generatedText;
       console.log('Conteúdo gerado recebido:', generatedText.substring(0, 100) + '...');
     }
@@ -74,7 +76,7 @@ Deno.serve(async (req: Request) => {
     console.log('Herói atualizado com sucesso!');
 
     return new Response(
-      JSON.stringify({ success: true, heroId, fileUrl }),
+      JSON.stringify({ success: true, heroId, fileUrl: videoUrl }),
       {
         status: 200,
         headers: {
