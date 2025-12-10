@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, MapPin, Calendar, FileText, Palette, Copy, Loader, CheckCircle, Download } from 'lucide-react';
+import { X, User, MapPin, Calendar, FileText, Palette, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
@@ -9,11 +9,10 @@ interface HeroFormProps {
   hero?: Hero;
   onClose: () => void;
   onSuccess: () => void;
+  onStartProcessing: (heroId: string, heroData: any) => void;
 }
 
-const WEBHOOK_URL = 'https://n8n01.nevico.com.br/webhook/f2919f1d-acef-4741-ab00-b537cfcbdcc7';
-
-export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
+export function HeroForm({ hero, onClose, onSuccess, onStartProcessing }: HeroFormProps) {
   const [formData, setFormData] = useState({
     name: hero?.name || '',
     ideia: hero?.ideia || '',
@@ -29,9 +28,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
-  const [fileUrl, setFileUrl] = useState<string>('');
-  const [processingError, setProcessingError] = useState<string>('');
 
   const getWebhookPayload = () => {
     return {
@@ -59,7 +55,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setProcessingStatus('processing');
 
     try {
       const dataToInsert = {
@@ -100,7 +95,7 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         heroId = data.id;
       }
 
-      const webhookPayload = {
+      const heroData = {
         name: formData.name,
         ideia: formData.ideia,
         observacao: formData.observacao,
@@ -111,40 +106,9 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         storylength: formData.storylength,
       };
 
-      const webhookResponse = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload),
-      });
-
-      if (!webhookResponse.ok) {
-        throw new Error('Erro ao processar no webhook');
-      }
-
-      const webhookData = await webhookResponse.json();
-
-      if (webhookData.fileUrl || webhookData.file_url || webhookData.url) {
-        const returnedFileUrl = webhookData.fileUrl || webhookData.file_url || webhookData.url;
-
-        await supabase
-          .from('heroes')
-          .update({
-            file_url: returnedFileUrl,
-            processing_status: 'completed'
-          })
-          .eq('id', heroId);
-
-        setFileUrl(returnedFileUrl);
-        setProcessingStatus('success');
-      } else {
-        throw new Error('Webhook não retornou URL do arquivo');
-      }
+      onStartProcessing(heroId, heroData);
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
-      setProcessingError(err.message || 'Ocorreu um erro ao processar');
-      setProcessingStatus('error');
     } finally {
       setLoading(false);
     }
@@ -375,69 +339,6 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
         </div>
       )}
 
-      {processingStatus !== 'idle' && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[70]">
-          <div className={`rounded-2xl max-w-md w-full p-8 shadow-2xl ${
-            processingStatus === 'processing' ? 'bg-gradient-to-br from-blue-50 to-blue-100' :
-            processingStatus === 'success' ? 'bg-gradient-to-br from-green-50 to-green-100' :
-            'bg-gradient-to-br from-red-50 to-red-100'
-          }`}>
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className="p-6 bg-white rounded-full shadow-lg">
-                {processingStatus === 'processing' && (
-                  <Loader size={64} className="text-blue-500 animate-spin" />
-                )}
-                {processingStatus === 'success' && (
-                  <CheckCircle size={64} className="text-green-500" />
-                )}
-                {processingStatus === 'error' && (
-                  <X size={64} className="text-red-500" />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-gray-800">
-                  {processingStatus === 'processing' && 'Processando...'}
-                  {processingStatus === 'success' && 'Concluído!'}
-                  {processingStatus === 'error' && 'Erro'}
-                </h2>
-                <p className="text-gray-700 text-lg">
-                  {processingStatus === 'processing' && 'Aguardando processamento do n8n. Isso pode levar alguns instantes...'}
-                  {processingStatus === 'success' && 'Arquivo gerado com sucesso! Clique no link abaixo para baixar.'}
-                  {processingStatus === 'error' && (processingError || 'Ocorreu um erro ao processar.')}
-                </p>
-              </div>
-
-              {processingStatus === 'success' && fileUrl && (
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg font-semibold text-lg"
-                >
-                  <Download size={20} />
-                  Baixar Arquivo
-                </a>
-              )}
-
-              {(processingStatus === 'success' || processingStatus === 'error') && (
-                <button
-                  onClick={() => {
-                    setProcessingStatus('idle');
-                    if (processingStatus === 'success') {
-                      onSuccess();
-                      onClose();
-                    }
-                  }}
-                  className="w-full px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-all shadow-md hover:shadow-lg font-semibold text-lg"
-                >
-                  {processingStatus === 'success' ? 'Fechar' : 'Tentar Novamente'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
