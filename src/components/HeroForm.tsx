@@ -13,37 +13,37 @@ const ART_STYLES = [
     id: 'exemplo_01',
     name: 'Historical Semi-Realistic',
     image: '/exemplo_01.jpg',
-    prompt: 'Historical semi-realistic digital painting'
+    prompt: 'Historical semi-realistic digital painting, dramatic chiaroscuro lighting, Renaissance-inspired composition, rich warm amber tones, detailed period clothing, cinematic depth, classical painting techniques, atmospheric window light, photorealistic textures, emotional storytelling, Rembrandt-style lighting'
   },
   {
     id: 'exemplo_02',
     name: '3D Animation (Pixar)',
     image: '/exemplo_02.jpg',
-    prompt: 'ultra-cute 3D animation style, soft lighting, pastel color palette, cinematic bokeh, smooth fluffy textures, expressive eyes, storybook atmosphere, Pixar-quality'
+    prompt: 'Ultra-cute 3D animation style, soft diffused lighting, warm pastel color palette, cinematic bokeh background, smooth fluffy textures, oversized expressive eyes, storybook atmosphere, Pixar-quality render, adorable family characters, playful joyful expressions, high detail modeling, cozy home setting'
   },
   {
     id: 'exemplo_03',
     name: 'Cinematic Minimalism',
     image: '/exemplo_03.jpg',
-    prompt: 'Cinematic painterly minimalism, simplified facial features, warm diffused lighting, smooth brushwork, minimal background noise, emotional focus on characters, natural color palette, subtle contour lines, modern documentary illustration style'
+    prompt: 'Cinematic painterly minimalism, simplified facial features, warm golden hour lighting, smooth brushwork, minimal background elements, emotional focus on characters, earthy natural color palette, subtle contour lines, modern documentary illustration style, soft edges, contemplative atmosphere'
   },
   {
     id: 'exemplo_04',
     name: 'Art Nouveau',
     image: '/exemplo_04.jpg',
-    prompt: 'Vintage Art Nouveau illustrative style, delicate ink linework, soft digital watercolor textures, pastel Mediterranean palette, elegant feminine poses, Belle Époque aesthetics, minimal shading, warm paper-like background, romantic poetic atmosphere'
+    prompt: 'Vintage Art Nouveau illustrative style, delicate ink linework, soft digital watercolor textures, pastel beige and brown palette, elegant period poses, Belle Époque aesthetics, minimal shading, warm paper-like background, romantic poetic atmosphere, decorative floral elements, graceful composition, café scene'
   },
   {
     id: 'exemplo_05',
     name: 'Retro Pixel Art',
     image: '/exemplo_05.jpg',
-    prompt: 'Art Style: Retro Pixel Art (8-bit / 16-bit)'
+    prompt: 'Retro pixel art style, 8-bit or 16-bit aesthetic, limited color palette, sharp pixel-perfect edges, nostalgic gaming vibe, dithering effects, chunky blocky characters, classic sprite-based design, retro computer graphics'
   },
   {
     id: 'exemplo_06',
     name: 'Flat 2D Vector',
     image: '/exemplo_06.jpg',
-    prompt: 'flat 2d vector illustration, infographic motion-design aesthetic, bold clean outlines, simplified geometric shapes, bright saturated colors, expressive cartoon faces, minimal shading, high-contrast background, dynamic composition, educational visual tone, smooth subtle gradients, clear readable forms, youtube-thumbnail-friendly layout'
+    prompt: 'Flat 2D vector illustration, infographic motion-design aesthetic, bold clean outlines, simplified geometric shapes, bright saturated colors, expressive cartoon faces, minimal shading, high-contrast pale blue background, dynamic composition, educational visual tone, smooth subtle gradients, clear readable forms, youtube-thumbnail-friendly layout'
   }
 ];
 
