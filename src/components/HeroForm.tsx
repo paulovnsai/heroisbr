@@ -115,13 +115,18 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     }
   };
 
+  const extractStoryLengthNumber = (storylength: string): number => {
+    const match = storylength.match(/\d+/);
+    return match ? parseInt(match[0]) : 1;
+  };
+
   const processWebhook = async (heroId: string, heroName: string) => {
     try {
       const webhookPayload = {
         heroId: heroId,
         name: formData.name,
         ideia: formData.ideia,
-        storylength: formData.storylength,
+        storylength: extractStoryLengthNumber(formData.storylength),
         artStyle: formData.artStyle,
       };
 
@@ -414,7 +419,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               <pre>{JSON.stringify({
                 name: formData.name,
                 ideia: formData.ideia,
-                storylength: formData.storylength,
+                storylength: extractStoryLengthNumber(formData.storylength),
                 artStyle: formData.artStyle,
               }, null, 2)}</pre>
             </div>
