@@ -23,7 +23,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
     ano: hero?.ano || '',
     status: hero?.status || 'Pouco lembrado nacionalmente',
     artstyle: hero?.artstyle || 'Historical semi-realistic digital painting',
-    storylength: hero?.storylength || '20',
+    storylength: hero?.storylength || '1 minuto',
     hero_image_url: hero?.hero_image_url || '',
   });
 
@@ -364,9 +364,9 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               value={formData.storylength}
               onChange={(e) => setFormData({ ...formData, storylength: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Ex: 20"
+              placeholder="Ex: 1 minuto"
             />
-            <p className="text-xs text-gray-500 mt-1">Número aproximado de páginas ou duração</p>
+            <p className="text-xs text-gray-500 mt-1">Duração desejada para a história (ex: 1 minuto, 2 minutos, etc)</p>
           </div>
 
           <div className="flex gap-3 pt-4">
