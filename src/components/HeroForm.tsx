@@ -32,9 +32,16 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
 
   const handleVoiceFieldsExtracted = (fields: Record<string, string>) => {
+    const cleanedFields = Object.entries(fields).reduce((acc, [key, value]) => {
+      if (value && value.trim() !== '') {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
     setFormData(prev => ({
       ...prev,
-      ...fields,
+      ...cleanedFields,
     }));
   };
 

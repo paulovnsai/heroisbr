@@ -127,10 +127,12 @@ Retorne APENAS um JSON com os campos identificados. Não adicione explicações.
       const content = gptData.choices[0].message.content;
       console.log('Resposta GPT:', content);
 
-      const jsonMatch = content.match(/\{[^}]+\}/);
+      const jsonMatch = content.match(/\{[\s\S]*?\}/);
       if (jsonMatch) {
         const fields = JSON.parse(jsonMatch[0]);
         console.log('Campos extraídos:', fields);
+
+        delete fields.status;
 
         if (Object.keys(fields).length > 0 && this.onFieldsUpdate) {
           console.log('Chamando webhook do n8n...');
