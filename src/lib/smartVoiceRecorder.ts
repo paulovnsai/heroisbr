@@ -1,65 +1,5 @@
 import OpenAI from 'openai';
 
-export class SmartVoiceRecorder {
-  private mediaRecorder: MediaRecorder | null = null;
-  private audioChunks: Blob[] = [];
-  private stream: MediaStream | null = null;
-  private intervalId: number | null = null;
-  private onChunkReady?: (blob: Blob) => void;
-
-  async startRecording(onChunkReady?: (blob: Blob) => void): Promise<void> {
-    try {
-      this.onChunkReady = onChunkReady;
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(this.stream);
-      this.audioChunks = [];
-
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.start();
-
-      if (this.onChunkReady) {
-        this.intervalId = window.setInterval(() => {
-          if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-            this.mediaRecorder.requestData();
-
-            if (this.audioChunks.length > 0) {
-              const audioBlob = new Blob([...this.audioChunks], { type: 'audio/webm' });
-              this.onChunkReady!(audioBlob);
-            }
-          }
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Erro ao iniciar gravação:', error);
-      throw new Error('Não foi possível acessar o microfone');
-    }
-  }
-
-  stopRecording(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-
-    if (this.mediaRecorder) {
-      this.mediaRecorder.stop();
-    }
-
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-    }
-  }
-
-  isRecording(): boolean {
-    return this.mediaRecorder?.state === 'recording';
-  }
-}
-
 interface HeroFormData {
   name?: string;
   ideia?: string;
@@ -70,46 +10,37 @@ interface HeroFormData {
   storylength?: string;
 }
 
-export async function transcribeAndExtractFields(audioBlob: Blob): Promise<HeroFormData> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+export class SmartVoiceRecorder {
+  private ws: WebSocket | null = null;
+  private stream: MediaStream | null = null;
+  private audioContext: AudioContext | null = null;
+  private processor: ScriptProcessorNode | null = null;
+  private source: MediaStreamAudioSourceNode | null = null;
+  private onFieldsUpdate?: (fields: HeroFormData) => void;
+  private conversationHistory: string = '';
 
-  if (!apiKey) {
-    throw new Error('Chave da API OpenAI não configurada');
-  }
+  async startRecording(onFieldsUpdate?: (fields: HeroFormData) => void): Promise<void> {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-  const openai = new OpenAI({
-    apiKey,
-    dangerouslyAllowBrowser: true,
-  });
+    if (!apiKey) {
+      throw new Error('Chave da API OpenAI não configurada');
+    }
 
-  const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.webm');
-  formData.append('model', 'whisper-1');
-  formData.append('language', 'pt');
+    this.onFieldsUpdate = onFieldsUpdate;
 
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
+    this.ws = new WebSocket(
+      `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`,
+      ['realtime', `openai-insecure-api-key.${apiKey}`, 'openai-beta.realtime-v1']
+    );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Erro ao transcrever áudio');
-  }
+    this.ws.onopen = () => {
+      this.ws?.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          modalities: ['text', 'audio'],
+          instructions: `Você é um assistente que extrai informações de heróis brasileiros enquanto o usuário fala.
 
-  const transcriptionData = await response.json();
-  const transcribedText = transcriptionData.text;
-
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content: `Você é um assistente que extrai informações de heróis brasileiros de um texto falado.
-Extraia APENAS os campos mencionados pelo usuário e retorne em formato JSON.
+Extraia APENAS os campos mencionados e retorne SOMENTE o JSON atualizado, sem nenhuma explicação adicional.
 
 Campos possíveis:
 - name: nome do herói
@@ -120,38 +51,142 @@ Campos possíveis:
 - artstyle: estilo artístico (se mencionado)
 - storylength: tamanho da história (se mencionado)
 
-Se o usuário disser "mudar" ou "alterar" um campo, inclua esse campo no JSON.
+IMPORTANTE:
+- Retorne APENAS o JSON com os campos mencionados
+- Se o usuário disser "mudar" ou "alterar" um campo, atualize esse campo
+- Não adicione explicações ou texto além do JSON
 
-Retorne APENAS o JSON, sem explicações. Se não houver campos mencionados, retorne {}.
+Exemplo de resposta:
+{"name": "João Silva", "ideia": "salvou crianças de incêndio", "local": "São Paulo", "ano": "2020"}`,
+          voice: 'alloy',
+          input_audio_format: 'pcm16',
+          output_audio_format: 'pcm16',
+          input_audio_transcription: {
+            model: 'whisper-1'
+          },
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 500
+          },
+          temperature: 0.3
+        }
+      }));
+    };
 
-Exemplos:
-"nome João Silva descrição salvou crianças de incêndio local São Paulo ano 2020"
--> {"name": "João Silva", "ideia": "salvou crianças de incêndio", "local": "São Paulo", "ano": "2020"}
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
 
-"mudar o ano para 2021"
--> {"ano": "2021"}
+        if (data.type === 'response.done') {
+          const output = data.response?.output;
 
-"nome Maria observação professora dedicada"
--> {"name": "Maria", "observacao": "professora dedicada"}`
-      },
-      {
-        role: 'user',
-        content: transcribedText
+          if (output && output.length > 0) {
+            for (const item of output) {
+              if (item.type === 'message' && item.content) {
+                for (const content of item.content) {
+                  if (content.type === 'text' && content.text) {
+                    this.processTextResponse(content.text);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (data.type === 'conversation.item.input_audio_transcription.completed') {
+          this.conversationHistory += ' ' + data.transcript;
+        }
+      } catch (error) {
+        console.error('Erro ao processar mensagem WebSocket:', error);
       }
-    ],
-    temperature: 0.3,
-  });
+    };
 
-  const result = completion.choices[0].message.content;
+    this.ws.onerror = (error) => {
+      console.error('Erro no WebSocket:', error);
+    };
 
-  if (!result) {
-    return {};
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        sampleRate: 24000
+      }
+    });
+
+    this.audioContext = new AudioContext({ sampleRate: 24000 });
+    this.source = this.audioContext.createMediaStreamSource(this.stream);
+    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+
+    this.processor.onaudioprocess = (e) => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputData.length);
+
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+
+        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+
+        this.ws.send(JSON.stringify({
+          type: 'input_audio_buffer.append',
+          audio: base64Audio
+        }));
+      }
+    };
+
+    this.source.connect(this.processor);
+    this.processor.connect(this.audioContext.destination);
   }
 
-  try {
-    return JSON.parse(result);
-  } catch (e) {
-    console.error('Erro ao parsear resposta:', result);
-    return {};
+  private processTextResponse(text: string): void {
+    try {
+      const trimmedText = text.trim();
+
+      let jsonMatch = trimmedText.match(/\{[^}]+\}/);
+      if (jsonMatch) {
+        const fields = JSON.parse(jsonMatch[0]);
+        if (Object.keys(fields).length > 0 && this.onFieldsUpdate) {
+          this.onFieldsUpdate(fields);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao processar resposta:', error, text);
+    }
+  }
+
+  stopRecording(): void {
+    if (this.processor) {
+      this.processor.disconnect();
+      this.processor = null;
+    }
+
+    if (this.source) {
+      this.source.disconnect();
+      this.source = null;
+    }
+
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+    }
+
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+
+    this.conversationHistory = '';
+  }
+
+  isRecording(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
   }
 }
