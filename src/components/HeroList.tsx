@@ -58,7 +58,7 @@ export function HeroList() {
       if (error) throw error;
       setHeroes(data || []);
     } catch (error) {
-      console.error('Erro ao buscar heróis:', error);
+      console.error('Erro ao buscar registros:', error);
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function HeroList() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover este herói do registro?')) {
+    if (!confirm('Tem certeza que deseja remover este registro?')) {
       return;
     }
 
@@ -93,7 +93,7 @@ export function HeroList() {
       if (error) throw error;
       fetchHeroes();
     } catch (error) {
-      console.error('Erro ao deletar herói:', error);
+      console.error('Erro ao deletar registro:', error);
     }
   };
 
@@ -300,7 +300,7 @@ export function HeroList() {
         {filteredHeroes.length === 0 && (
           <div className="text-center py-12">
             <MapPin size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 text-lg">Nenhum herói encontrado</p>
+            <p className="text-gray-600 text-lg">Nenhum registro encontrado</p>
             <p className="text-gray-500 text-sm mt-2">Tente ajustar sua busca ou filtros</p>
           </div>
         )}
@@ -412,7 +412,7 @@ function HeroDetails({ hero, onClose }: HeroDetailsProps) {
           </div>
 
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Ato Heroico</h3>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Descrição</h3>
             <p className="text-gray-700 leading-relaxed text-lg">{hero.ideia}</p>
           </div>
 

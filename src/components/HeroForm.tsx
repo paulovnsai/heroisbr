@@ -143,9 +143,9 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
         .eq('id', heroId);
 
       if (updateError) {
-        console.error('Erro ao atualizar herói:', updateError);
+        console.error('Erro ao atualizar registro:', updateError);
       } else {
-        console.log('Herói atualizado com sucesso!');
+        console.log('Registro atualizado com sucesso!');
         if (onProcessingComplete && (returnedFileUrl || content)) {
           onProcessingComplete(returnedFileUrl || content, heroName);
         } else if (onProcessingComplete) {
@@ -271,7 +271,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               onChange={(e) => setFormData({ ...formData, ideia: e.target.value })}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-              placeholder="Descreva o que tornou essa pessoa um herói..."
+              placeholder="Descreva o conteúdo do vídeo..."
             />
           </div>
 
@@ -295,7 +295,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
               disabled={loading}
               className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Salvando...' : hero ? 'Atualizar Herói' : 'Registrar Herói'}
+              {loading ? 'Salvando...' : hero ? 'Atualizar' : 'Registrar'}
             </button>
           </div>
         </form>
@@ -343,7 +343,7 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
                 <p className="text-sm text-blue-800">
                   <strong>Método:</strong> POST<br />
                   <strong>Headers:</strong> Content-Type: application/json<br />
-                  <strong>Ação:</strong> Esta requisição será enviada automaticamente quando você registrar ou atualizar o herói.
+                  <strong>Ação:</strong> Esta requisição será enviada automaticamente quando você registrar ou atualizar.
                 </p>
               </div>
 

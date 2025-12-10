@@ -92,15 +92,15 @@ export function AudioRecorder({ onTranscriptionComplete, supabaseUrl, openaiKey 
           console.log('Transcrição:', transcribedText);
 
           console.log('Extraindo dados estruturados com GPT...');
-          const extractionPrompt = `Você é um assistente que extrai informações de heróis brasileiros a partir de uma transcrição.
+          const extractionPrompt = `Você é um assistente que extrai informações a partir de uma transcrição de áudio.
 
 Transcrição: "${transcribedText}"
 
 Extraia as seguintes informações:
-- name: Nome do vídeo/título que identifica este herói (deve ser o nome completo da pessoa mencionada)
-- ideia: Descrição completa do ato heroico e da história
+- name: Nome do vídeo/título (pode ser nome de pessoa ou tema principal mencionado)
+- ideia: Descrição completa do conteúdo e da história
 
-IMPORTANTE: O campo "name" deve conter o nome da pessoa que é o herói da história. Este será o título do vídeo.
+IMPORTANTE: O campo "name" deve conter o título do vídeo. Este será usado para identificar o conteúdo.
 
 Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for mencionado, use string vazia. Exemplo:
 {
@@ -177,7 +177,7 @@ Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for m
           </h3>
           <p className="text-xs text-gray-600">
             {isRecording
-              ? 'Gravando... Fale as informações do herói'
+              ? 'Gravando... Fale as informações do vídeo'
               : isProcessing
               ? 'Processando áudio...'
               : 'Clique para gravar e preencher os campos automaticamente'}
