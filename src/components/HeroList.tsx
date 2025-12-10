@@ -174,14 +174,14 @@ export function HeroList() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Registro de Heróis</h1>
-          <p className="text-gray-600 mt-1">Gerencie e honre os heróis brasileiros</p>
+          <p className="text-gray-600 mt-1">Crie vídeos com inteligência artificial</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl"
         >
           <Plus size={20} />
-          Registrar Herói
+          Registro
         </button>
       </div>
 
