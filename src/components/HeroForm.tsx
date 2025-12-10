@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, MapPin, Calendar, FileText, Palette, Copy } from 'lucide-react';
+import { X, User, MapPin, Calendar, FileText, Palette, Copy, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
@@ -29,6 +29,8 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showWebhookPayload, setShowWebhookPayload] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
 
   const getWebhookPayload = () => {
     return {
@@ -145,6 +147,9 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
             processing_status: 'completed'
           })
           .eq('id', heroId);
+
+        setFileUrl(returnedFileUrl);
+        setSuccess(true);
       } else {
         console.warn('Webhook não retornou URL do arquivo, marcando como concluído mesmo assim');
 
@@ -152,10 +157,11 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
           .from('heroes')
           .update({ processing_status: 'completed' })
           .eq('id', heroId);
+
+        setSuccess(true);
       }
 
       onSuccess();
-      onClose();
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro ao salvar');
       console.error('Erro ao processar:', err);
@@ -163,6 +169,70 @@ export function HeroForm({ hero, onClose, onSuccess }: HeroFormProps) {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg max-w-2xl w-full">
+          <div className="bg-green-600 text-white px-6 py-4 flex justify-between items-center rounded-t-lg">
+            <h2 className="text-2xl font-bold">Processamento Concluído!</h2>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="p-8 text-center">
+            <div className="mb-6">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Download size={40} className="text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Herói Registrado com Sucesso!</h3>
+              <p className="text-gray-600">O webhook processou os dados e gerou o arquivo.</p>
+            </div>
+
+            {fileUrl ? (
+              <div className="mb-6">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Link do arquivo gerado:</p>
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 break-all text-sm"
+                  >
+                    {fileUrl}
+                  </a>
+                </div>
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Download size={20} />
+                  Baixar Arquivo
+                </a>
+              </div>
+            ) : (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-yellow-800">O processamento foi concluído, mas nenhum link foi retornado pelo webhook.</p>
+              </div>
+            )}
+
+            <button
+              onClick={onClose}
+              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
