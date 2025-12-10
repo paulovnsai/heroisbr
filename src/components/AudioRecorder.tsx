@@ -96,26 +96,14 @@ export function AudioRecorder({ onTranscriptionComplete, supabaseUrl, openaiKey 
 
 Transcrição: "${transcribedText}"
 
-Extraia as seguintes informações se disponíveis:
+Extraia as seguintes informações:
 - name: Nome completo do herói
-- ideia: Descrição do ato heroico
-- observacao: Observações adicionais
-- local: Cidade e estado (formato: Cidade - UF)
-- ano: Ano do acontecimento
-- status: Um de: "Lembrado nacionalmente", "Pouco lembrado nacionalmente", "Esquecido"
-- artstyle: Estilo artístico (padrão: "Historical semi-realistic digital painting")
-- storylength: Duração da história (padrão: "1 minuto")
+- ideia: Descrição completa do ato heroico
 
 Retorne APENAS um JSON válido com os campos encontrados. Se um campo não for mencionado, use string vazia. Exemplo:
 {
   "name": "Maria Silva",
-  "ideia": "Salvou crianças de incêndio",
-  "observacao": "",
-  "local": "São Paulo - SP",
-  "ano": "2020",
-  "status": "Pouco lembrado nacionalmente",
-  "artstyle": "Historical semi-realistic digital painting",
-  "storylength": "1 minuto"
+  "ideia": "Salvou crianças de um incêndio em São Paulo no ano de 2020, demonstrando grande coragem ao entrar no prédio em chamas"
 }`;
 
           const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
