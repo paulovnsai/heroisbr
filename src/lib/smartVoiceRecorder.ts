@@ -4,9 +4,12 @@ export class SmartVoiceRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private stream: MediaStream | null = null;
+  private intervalId: number | null = null;
+  private onChunkReady?: (blob: Blob) => void;
 
-  async startRecording(): Promise<void> {
+  async startRecording(onChunkReady?: (blob: Blob) => void): Promise<void> {
     try {
+      this.onChunkReady = onChunkReady;
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       this.mediaRecorder = new MediaRecorder(this.stream);
       this.audioChunks = [];
@@ -18,31 +21,38 @@ export class SmartVoiceRecorder {
       };
 
       this.mediaRecorder.start();
+
+      if (this.onChunkReady) {
+        this.intervalId = window.setInterval(() => {
+          if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.mediaRecorder.requestData();
+
+            if (this.audioChunks.length > 0) {
+              const audioBlob = new Blob([...this.audioChunks], { type: 'audio/webm' });
+              this.onChunkReady!(audioBlob);
+            }
+          }
+        }, 3000);
+      }
     } catch (error) {
       console.error('Erro ao iniciar gravação:', error);
       throw new Error('Não foi possível acessar o microfone');
     }
   }
 
-  async stopRecording(): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      if (!this.mediaRecorder) {
-        reject(new Error('Gravador não foi iniciado'));
-        return;
-      }
+  stopRecording(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
 
-      this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-
-        if (this.stream) {
-          this.stream.getTracks().forEach(track => track.stop());
-        }
-
-        resolve(audioBlob);
-      };
-
+    if (this.mediaRecorder) {
       this.mediaRecorder.stop();
-    });
+    }
+
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+    }
   }
 
   isRecording(): boolean {
