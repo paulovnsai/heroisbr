@@ -24,7 +24,7 @@ function App() {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-gray-600 text-sm">
-            Heróis Anônimos do Brasil - Honrando aqueles que fazem a diferença desde 2025
+            Crie vídeos com inteligência artificial
           </p>
         </div>
       </footer>
