@@ -96,8 +96,15 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
       try {
         webhookData = await webhookResponse.json();
         console.log('====== RESPOSTA DO WEBHOOK ======');
-        console.log('Dados completos:', webhookData);
+        console.log('JSON COMPLETO:', JSON.stringify(webhookData, null, 2));
         console.log('Todas as chaves:', Object.keys(webhookData));
+        console.log('Valores:', Object.values(webhookData));
+        console.log('================================');
+
+        console.log('⚠️ ATENÇÃO: Seu N8N está retornando apenas:', webhookData);
+        console.log('⚠️ O sistema precisa receber pelo menos um destes campos:');
+        console.log('   - fileUrl (ou file_url, url, link, downloadUrl)');
+        console.log('   - content (ou story, text, generatedContent)');
         console.log('================================');
       } catch (jsonError) {
         console.log('Resposta não é JSON, mas webhook retornou sucesso');
@@ -112,8 +119,17 @@ export function HeroForm({ hero, onClose, onSuccess, onProcessingComplete }: Her
                      webhookData.generatedContent || webhookData.generated_content ||
                      webhookData.output || webhookData.result || '';
 
-      console.log('URL do arquivo extraída:', returnedFileUrl || 'NENHUMA');
-      console.log('Conteúdo extraído:', content ? content.substring(0, 50) + '...' : 'NENHUM');
+      if (!returnedFileUrl && !content) {
+        console.error('❌ PROBLEMA: N8N não retornou fileUrl nem content!');
+        console.error('📋 Configure seu N8N para retornar JSON assim:');
+        console.error(`{
+  "fileUrl": "https://seu-servidor.com/arquivo.pdf",
+  "content": "História gerada aqui..."
+}`);
+      } else {
+        console.log('✅ URL do arquivo:', returnedFileUrl || 'Não fornecida');
+        console.log('✅ Conteúdo:', content ? content.substring(0, 50) + '...' : 'Não fornecido');
+      }
 
       const updateData: any = {
         processing_status: 'completed'
