@@ -15,9 +15,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { heroId, fileUrl, status } = await req.json();
+    const body = await req.json();
+    const { heroId, fileUrl, status, content, generatedContent, generated_content, story, text, output, result } = body;
 
-    console.log('Recebido callback do N8N:', { heroId, fileUrl, status });
+    console.log('Recebido callback do N8N:', body);
 
     if (!heroId) {
       return new Response(
@@ -43,6 +44,12 @@ Deno.serve(async (req: Request) => {
 
     if (fileUrl) {
       updateData.file_url = fileUrl;
+    }
+
+    const generatedText = content || generatedContent || generated_content || story || text || output || result;
+    if (generatedText) {
+      updateData.generated_content = generatedText;
+      console.log('Conteúdo gerado recebido:', generatedText.substring(0, 100) + '...');
     }
 
     const { error } = await supabase
